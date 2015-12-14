@@ -2,7 +2,8 @@
 
 (require parser-tools/lex
          (prefix-in : parser-tools/lex-sre)
-         racket/string)
+         racket/string
+         "number.rkt")
 
 (provide lex WORDS PUNCTUATION)
 
@@ -12,8 +13,7 @@
   (:: "NB." (complement (:: any-string end-of-line any-string))))
 
 (define-lex-abbrevs
-  ;; TODO
-  [number (:: (:+ numeric) (:? #\. (:+ numeric)))])
+  [number (:: (:or numeric #\_) (:* (:or numeric alphabetic #\. #\_)))])
 
 (define-lex-abbrevs
   [primitive (:- graphic alphabetic numeric)]
@@ -35,15 +35,11 @@
    [comment (token-COMMENT)]
    [#\( (token-LP)]
    [#\) (token-RP)]
-   [number (token-NUMBER (parse-number lexeme))]
+   [number (token-NUMBER (string->number/j lexeme))]
    [primary (token-PRIMARY (string->symbol lexeme))]
    [name (token-NAME (string->symbol lexeme))]
    [string (token-STRING (parse-string lexeme))]
    [(eof) (token-EOF)]))
-
-(define (parse-number str)
-  ;; TODO
-  (string->number str))
 
 (define (parse-string str)
   (string-replace (substring str 1 (sub1 (string-length str))) "''" "'"))
