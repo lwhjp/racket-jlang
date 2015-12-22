@@ -1,18 +1,24 @@
 #lang racket/base
 
-(require (prefix-in r: racket/math)
+(require (for-syntax racket/base)
          math/array
+         racket/math
+         racket/provide
          racket/sequence
          racket/vector
-         (except-in "../../../frame/main.rkt" shape)
+         "../../../frame/main.rkt"
          "../noun.rkt"
          "../verb.rkt")
 
-(provide (all-defined-out))
+(provide (filtered-out
+          (λ (name)
+            (and (regexp-match? #rx"^j:" name)
+                 (substring name 2)))
+          (all-defined-out)))
 
 ;; TODO: make polymorphic verb types instead of using Any
 
-(define (append x y)
+(define (j:append x y)
   (unless (eq? (noun-type x) (noun-type y))
     (error "type mismatch"))
   (noun
@@ -22,10 +28,10 @@
          (append (noun->items x)
                  (noun->items y))))))
 
-(define conjugate
-  (wrap/monad r:conjugate))
+(define j:conjugate
+  (wrap/monad conjugate))
 
-(define (copy x y)
+(define (j:copy x y)
   (define y-items (in-noun-items y))
   (array->noun
    (apply/rank
@@ -43,7 +49,7 @@
      (dyadic-rank 1 'any))
     (list (noun-value x) (noun-value y)))))
 
-(define divide
+(define j:divide
   (wrap/dyad
    (λ (x y)
      (if (zero? y)
@@ -53,10 +59,10 @@
            [(negative? x) -inf.0])
          (/ x y)))))
 
-(define (head y)
+(define (j:head y)
   (sequence-ref (in-noun-items y) 0))
 
-(define (link x y)
+(define (j:link x y)
   (noun
    'box
    (array-append*
@@ -66,21 +72,21 @@
          (noun-value y)
          (array #[(box y)]))))))
 
-(define minus
+(define j:minus
   (wrap/dyad -))
 
-(define negate
+(define j:negate
   (wrap/monad -))
 
-(define plus
+(define j:plus
   (wrap/dyad +))
 
-(define (ravel y)
+(define (j:ravel y)
   (noun
    (noun-type y)
    (array-flatten (noun-value y))))
 
-(define (raze y)
+(define (j:raze y)
   (cond
     [(noun-empty? y) (noun (noun-type y) (array #[]))]
     [(eq? 'box (noun-type y))
@@ -96,12 +102,12 @@
      (noun (noun-type y)
            (array-flatten (noun-value y)))]))
 
-(define reciprocal
+(define j:reciprocal
   (wrap/monad
    (λ (y)
      (if (zero? y) +inf.0 (/ y)))))
 
-(define (shape x y)
+(define (j:shape x y)
   (unless (< (noun-rank x) 2)
     (error "length error"))
   (define items (in-noun-items y))
@@ -116,21 +122,21 @@
               ([item (in-cycle items)])
               item)))
 
-(define (shape-of y)
+(define (j:shape-of y)
   (array->noun
    (vector->array (noun-shape y))))
 
-(define signum
+(define j:signum
   (wrap/monad
    (λ (n)
      (if (real? n)
-         (r:sgn n)
+         (sgn n)
          (make-polar 1 (angle n))))))
 
-(define (tally y)
+(define (j:tally y)
   (noun
    'number
    (array-size (noun-value y))))
 
-(define times
+(define j:times
   (wrap/dyad *))

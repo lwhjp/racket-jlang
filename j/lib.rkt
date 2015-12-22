@@ -2,8 +2,8 @@
 
 (require (for-syntax racket/base
                      racket/provide-transform)
-         "private/lib/adverbs.rkt"
-         "private/lib/verbs.rkt"
+         (prefix-in j: (combine-in "private/lib/adverbs.rkt"
+                                   "private/lib/verbs.rkt"))
          "private/coupla.rkt"
          "private/name.rkt"
          "private/sentence.rkt"
@@ -24,17 +24,17 @@
   (make-rename-transformer #'#%module-begin))
 
 (provide (verb-out
-          [+ conjugate plus]
-          [* signum times]
-          [- negate minus]
-          [% reciprocal divide]
-          [$ shape-of shape]
-          [|,| ravel append]
-          [|;| raze link]
-          [|#| tally copy]
-          [|{| head #f])
+          [+ j:conjugate j:plus]
+          [* j:signum j:times]
+          [- j:negate j:minus]
+          [% j:reciprocal j:divide]
+          [$ j:shape-of j:shape]
+          [|,| j:ravel j:append]
+          [|;| j:raze j:link]
+          [|#| j:tally j:copy]
+          [|{| j:head #f])
          (rename-out
-          [insert-table /]
+          [j:insert-table /]
           [is/global =:])
          (rename-out
           [j-module-begin #%module-begin]
