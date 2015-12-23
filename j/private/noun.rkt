@@ -3,6 +3,7 @@
 (require math/array
          racket/contract/base
          racket/sequence
+         racket/vector
          "../../frame/main.rkt")
 
 (define (type? v)
@@ -23,6 +24,7 @@
   (struct noun ([type type?] [value array?]))
   [->noun (-> any/c noun?)]
   [noun-empty? (-> noun? boolean?)]
+  [noun-item-shape (-> noun? (vectorof exact-nonnegative-integer?))]
   [noun-shape (-> noun? (vectorof exact-nonnegative-integer?))]
   [noun-rank (-> noun? exact-nonnegative-integer?)]
   [noun->racket-value (-> noun? any/c)]
@@ -37,12 +39,16 @@
 (define (->noun v)
   (cond
     [(noun? v) v]
-    [(and (string? v) (= 1 (string-length v)))
-     (noun 'char (array (string-ref v 0)))]
+    [(string? v) (noun 'char (->array v))]
     [else (array->noun (->array v))]))
 
 (define (noun-empty? n)
   (array-empty? (noun-value n)))
+
+(define (noun-item-shape n)
+  (if (zero? (noun-rank n))
+      '#[]
+      (vector-drop (noun-shape n) 1)))
 
 (define (noun-shape n)
   (array-shape (noun-value n)))
@@ -83,10 +89,12 @@
   (sequence->list (in-noun-items n)))
 
 (define (array-empty? arr)
-  (for/or ([d (in-vector (array-dims arr))])
+  (for/or ([d (in-vector (array-shape arr))])
     (zero? d)))
 
 (define (array-first arr)
+  (when (array-empty? arr)
+    (error "empty array has no first item"))
   (array-ref arr (make-vector (array-dims arr) 0)))
 
 (define (array-type arr)

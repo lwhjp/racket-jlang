@@ -24,6 +24,8 @@
   (make-rename-transformer #'#%module-begin))
 
 (provide (verb-out
+          [< j:box j:less-than]
+          [> j:open j:larger-than]
           [+ j:conjugate j:plus]
           [* j:signum j:times]
           [- j:negate j:minus]
