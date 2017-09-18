@@ -45,12 +45,3 @@ Example:
     15
     > (sum-j '(1 2 3) '(4 5 6))
     (array #[#[5 6 7] #[6 7 8] #[7 8 9]])
-
-Using frames:
-
-    > (require math/array frame)
-    > (apply/rank + (list '(100 200) (index-array '#[2 3])))
-    (array #[#[100 101 102] #[203 204 205]])
-
-Note that this is the usual Racket `+` function. You can define
-more advanced operations by creating a `ranked-procedure` structure.

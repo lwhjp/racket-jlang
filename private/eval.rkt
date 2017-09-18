@@ -3,18 +3,18 @@
 (require racket/port
          "read.rkt")
 
-(provide eval-j)
-
 (define-namespace-anchor here)
 
-(define (make-j-namespace)
-  ;; This seems a bit weird
+; This doesn't seem like the right way to do this...
+(define j-namespace
   (parameterize
       ([current-namespace (namespace-anchor->empty-namespace here)])
-    (namespace-require 'j/lib)
+    (namespace-require 'j/private/bindings)
     (current-namespace)))
 
-(define (eval-j sentence [ns (make-j-namespace)])
+(define (eval/j str)
   (eval
-   (with-input-from-string sentence read-j)
-   ns))
+   (with-input-from-string str read-j)
+   j-namespace))
+
+(provide eval/j)

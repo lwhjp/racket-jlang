@@ -1,6 +1,5 @@
 #lang s-exp syntax/module-reader
-j/lib
+j/private/bindings
 #:read read-j
-#:read-syntax syntax:read-j
-
+#:read-syntax read-j-syntax
 (require "../private/read.rkt")
