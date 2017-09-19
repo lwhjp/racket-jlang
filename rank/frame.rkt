@@ -88,11 +88,25 @@
   (cond
     [(zero? arity) (proc)]
     [(andmap zero? frame-lengths) (apply proc (map unwrap-atom args))]
-    [else
-     ; TODO: probably need to broadcast manually
-     (collapse-frame/fill
-      (apply array-map proc (map *make-frame args frame-lengths))
-      fill)]))
+    [else (apply map/frame/fill/broadcast fill proc frame-lengths args)]))
+
+(define (map/frame/fill/broadcast fill proc frame-lengths . args)
+  (define frame-shapes (map (λ (l a) (vector-take (array-shape a) l)) frame-lengths args))
+  (define max-shape
+    (let check-prefix ([prefix #[]]
+                       [frames (sort frame-shapes < #:key vector-length)])
+      (cond
+        [(null? frames) prefix]
+        [(equal? prefix (vector-take (car frames) (vector-length prefix)))
+         (check-prefix (car frames) (cdr frames))]
+        [else (error "frame shape mismatch")])))
+  (define frames
+    (map (λ (f)
+           (for/fold ([f f])
+                     ([d (in-vector max-shape (array-dims f))])
+             (array-axis-insert f (array-dims f) d)))
+         (map *make-frame args frame-lengths)))
+  (collapse-frame/fill (apply array-map proc frames) fill))
 
 (provide
  make-frame
