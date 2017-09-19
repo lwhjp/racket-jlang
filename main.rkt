@@ -5,6 +5,6 @@
          "rank.rkt")
 
 (define (j str)
-  (normalize-noun (eval/j str)))
+  (eval/j str))
 
 (provide j)

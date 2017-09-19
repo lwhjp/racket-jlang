@@ -13,9 +13,7 @@
    rank)
   #:property prop:procedure
   (λ (p . args)
-    (define result
-      (apply/rank p args))
-    (if (atom? result) (unsafe-atom-ref result) result)))
+    (normalize-noun (apply/rank p args))))
 
 (define-syntax ranked-procedure? (make-rename-transformer #'RankedProcedure?))
 
