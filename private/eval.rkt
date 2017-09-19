@@ -1,6 +1,7 @@
 #lang racket/base
 
 (require racket/port
+         "locale.rkt"
          "read.rkt")
 
 (define-namespace-anchor here)
@@ -12,9 +13,14 @@
     (namespace-require 'j/private/bindings)
     (current-namespace)))
 
-(define (eval/j str)
-  (eval
-   (with-input-from-string str read-j)
-   j-namespace))
+(define (eval/j str
+                [env (make-j-environment)]
+                #:locale [locale 'base])
+  (parameterize ([current-j-environment env]
+                 [current-j-locale locale]
+                 [current-j-private-vars (make-hasheq)])
+    (eval
+     (with-input-from-string str read-j)
+     j-namespace)))
 
 (provide eval/j)
