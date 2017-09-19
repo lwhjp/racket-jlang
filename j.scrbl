@@ -53,6 +53,11 @@ The interfaces here are liable to change substantially.
 
 @section{Ranked apply}
 
+@(define rank-evaluator
+   (parameterize ([sandbox-output 'string]
+                  [sandbox-error-output 'string])
+     (make-evaluator 'racket/base #:requires '(math/array j/rank))))
+
 @defmodule[j/rank]{
   Support for J-style ranked apply.
 }
@@ -101,4 +106,23 @@ The interfaces here are liable to change substantially.
 
 @defform[(define/rank (id arg ...) body ...+)]{
   Shorthand for defining ranked procedures.
+}
+
+@defproc[(apply/rank [proc (or/c procedure? ranked-procedure?)]
+                     [v any/c] ...
+                     [lst list?]
+                     [#:fill fill any/c (void)])
+         any/c]{
+  Similar to regular @racket[apply], except that @racket[proc] may be mapped
+  over the arguments depending on its rank. Non-ranked procedures are assumed
+  to have rank @racket[0].
+
+  Ranked procedures will operate in this way implicitly.
+
+  @examples[#:eval rank-evaluator
+            (require math/array)
+            (apply/rank + (list '(100 200) (index-array '#[2 3])))
+            (define/rank (box-rows [y 1]) (box y))
+            (apply/rank box-rows (list (index-array '#[2 3])))
+            (box-rows (index-array '#[2 3]))]
 }

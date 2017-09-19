@@ -42,12 +42,12 @@
   (*apply/rank fill proc (apply list* args)))
 
 (define (*apply/rank fill proc args)
+  (define-values (real-proc rank)
+    (cond
+      [(RankedProcedure? proc) (values (RankedProcedure-proc proc) (RankedProcedure-rank proc))]
+      [else (values proc (make-list (length args) 0))]))
   (parameterize ([current-fill fill])
-    (apply map/frame/fill
-           fill
-           (RankedProcedure-proc proc)
-           (RankedProcedure-rank proc)
-           args)))
+    (apply map/frame/fill fill real-proc rank args)))
 
 (begin-for-syntax
   (define-syntax-class arg-decl
