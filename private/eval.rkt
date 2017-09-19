@@ -1,6 +1,7 @@
 #lang racket/base
 
 (require racket/port
+         racket/sequence
          "locale.rkt"
          "read.rkt")
 
@@ -20,7 +21,10 @@
                  [current-j-locale locale]
                  [current-j-private-vars (make-hasheq)])
     (eval
-     (with-input-from-string str read-j)
+     (cons #'begin
+           (with-input-from-string str
+             (λ ()
+               (sequence->list (in-producer read-j eof)))))
      j-namespace)))
 
 (provide eval/j)
