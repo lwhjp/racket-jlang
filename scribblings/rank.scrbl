@@ -1,68 +1,20 @@
 #lang scribble/manual
 
-@(require (for-label math/array
-                     racket
-                     "main.rkt"
-                     "number.rkt"
-                     "rank.rkt")
-          racket/sandbox
-          scribble/eval)
+@(require scribble/example
+          (for-label math/array
+                     racket/base
+                     j/rank))
 
-@title{J in Racket}
+@title{Ranked Apply}
 
-@centered{@bold{Note}}
-
-This is a work in progress. J support is incomplete at this time.
-The interfaces here are liable to change substantially.
-
-@section{Main}
-
-@defmodule[j]{
-}
-
-@(define j-evaluator
-   (parameterize ([sandbox-output 'string]
-                  [sandbox-error-output 'string])
-     (make-evaluator 'racket/base #:requires '(j))))
-
-@defproc[(j [str string?]) any/c]{
-  Evaluates @racket[str] as a J program. The result is an appropriate Racket value.
-  In particular, verbs may be applied to arguments and should behave as expected.
-  @examples[#:eval j-evaluator
-            (j "4 * 1 + 4")
-            (define mean (j "+/ % #"))
-            (mean '(2 3 4 5 6))]
-}
-
-@section{J library}
-
-@defmodule[j/lib]{
-  This module exposes J primitives with Racket-like names.
-}
-
-@section{Numbers}
-
-@defmodule[j/number]{
-  Support for parsing J-style numeric constants.
-}
-
-@defproc[(string->number/j [str string?]) (or/c number? #f)]{
-  Parses @racket[str] according to the J grammar. Returns the number or @racket[#f]
-  if the @racket[str] does not contain a recognizable numeric constant.
-}
-
-@section{Ranked apply}
-
-@(define rank-evaluator
-   (parameterize ([sandbox-output 'string]
-                  [sandbox-error-output 'string])
-     (make-evaluator 'racket/base #:requires '(math/array j/rank))))
+@(define rank-eval (make-base-eval))
+@examples[#:hidden #:eval rank-eval (require math/array racket/sequence j/rank)]
 
 @defmodule[j/rank]{
   Support for J-style ranked apply.
 }
 
-@subsection{Nouns}
+@section{Nouns}
 
 @defproc[(->array [v any/c]) array?]{
   Coerces @racket[v] to an array.
@@ -84,7 +36,7 @@ The interfaces here are liable to change substantially.
   Returns a sequence consisting of the items of @racket[v].
 }
 
-@subsection{Verbs}
+@section{Verbs}
 
 @defproc[(ranked-procedure? [v any/c]) boolean?]{
   Tests whether @racket[v] is a ranked procedure.
@@ -120,7 +72,6 @@ The interfaces here are liable to change substantially.
   Ranked procedures will operate in this way implicitly.
 
   @examples[#:eval rank-evaluator
-            (require math/array)
             (apply/rank + (list '(100 200) (index-array '#[2 3])))
             (define/rank (box-rows [y 1]) (box y))
             (apply/rank box-rows (list (index-array '#[2 3])))
