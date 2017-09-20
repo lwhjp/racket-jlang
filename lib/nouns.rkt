@@ -1,7 +1,7 @@
 #lang racket/base
 
 (require math/array
-         "../rank/noun.rkt")
+         "../rank.rkt")
 
 (define ace (array #[]))
 

@@ -1,6 +1,6 @@
 #lang racket/base
 
-(require "../rank/verb.rkt")
+(require "../rank.rkt")
 
 ;power
 ;determinant

@@ -7,9 +7,7 @@
          racket/math
          racket/provide
          racket/vector
-         "../rank/frame.rkt"
-         "../rank/noun.rkt"
-         "../rank/verb.rkt")
+         "../rank.rkt")
 
 (define-syntax-rule (define/atomic id proc)
   (define id (atomic-procedure->ranked-procedure proc)))

@@ -5,13 +5,10 @@
 ; TODO: check arity
 
 (define (reflex u)
-  (lambda/rank (y)
-    (apply/rank u y y)))
+  (lambda/rank (y) (u y y)))
 
 (define (passive u)
-  (define u-rank (procedure-rank u))
-  (lambda/rank ([x (cadr u-rank)] [y (car u-rank)])
-    (apply/rank u y x)))
+  (lambda/rank (x y) (u y x)))
 
 (define (insert u)
   ; TODO: gerund

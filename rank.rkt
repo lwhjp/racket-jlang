@@ -1,9 +1,8 @@
 #lang racket/base
 
-(require "rank/frame.rkt"
-         "rank/noun.rkt"
-         "rank/verb.rkt")
+(require "private/rank/noun.rkt"
+         "private/rank/verb.rkt")
 
-(provide (all-from-out "rank/frame.rkt"
-                       "rank/noun.rkt"
-                       "rank/verb.rkt"))
+(provide (all-from-out
+          "private/rank/noun.rkt"
+          "private/rank/verb.rkt"))
