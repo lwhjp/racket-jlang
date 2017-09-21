@@ -7,7 +7,13 @@
          racket/math
          racket/provide
          racket/vector
-         "../rank.rkt")
+         "../customize.rkt"
+         "../rank.rkt"
+         "parameters.rkt")
+
+(define-syntax-rule (lambda/atomic (arg ...) body ...)
+  (atomic-procedure->ranked-procedure
+   (lambda (arg ...) body ...)))
 
 (define-syntax-rule (define/atomic id proc)
   (define id (atomic-procedure->ranked-procedure proc)))
@@ -18,25 +24,69 @@
 (define-syntax-rule (define-dyad-alias id proc)
   (define/atomic id (procedure-reduce-arity proc 2)))
 
-; self-classify; equal
+(define (->jbool v) (if v 1 0))
+
+(define (*zero? v) (and (number? v) (zero? v)))
+(define (*positive? v) (and (real? v) (positive? v)))
+
+(define (compare/numeric numeric-cmp else-cmp x y)
+  (cond
+    [(and (number? x) (number? y)) (numeric-cmp x y)]
+    [(and (box? x) (box? y)) (compare/numeric numeric-cmp else-cmp (unbox x) (unbox y))]
+    [else (else-cmp x y)]))
+
+(define (=/t t x y)
+  (<= (magnitude (- x y))
+      (* t (max (magnitude x) (magnitude y)))))
+
+; self-classify
+
+(define-customizable/cond (j:equal t)
+  current-default-tolerance
+  [(*zero? t) (lambda/atomic (x y) (->jbool (compare/numeric = equal? x y)))]
+  [(*positive? t) (lambda/atomic (x y) (->jbool (compare/numeric (λ (x y) (=/t t x y)) equal? x y)))])
 
 (define/rank (j:box y) (array (box y)))
 
-; less-than; lesser-of
+(define-customizable/cond (j:less-than t)
+  current-default-tolerance
+  [(*zero? t) (lambda/atomic (x y) (->jbool (< x y)))]
+  [(*positive? t) (lambda/atomic (x y) (->jbool (and (< x y) (not (=/t t x y)))))])
+
+;floor
+
+(define-customizable/cond (j:lesser-of t)
+  current-default-tolerance
+  [(*zero? t) (lambda/atomic (x y) (if (< x y) x y))]
+  [(*positive? t) (lambda/atomic (x y) (if (and (< x y) (not (=/t t x y))) x y))])
 
 (define-monad-alias j:decrement sub1)
 
-; less-than-or-equal
+(define-customizable/cond (j:less-than-or-equal t)
+  current-default-tolerance
+  [(*zero? t) (lambda/atomic (x y) (->jbool (<= x y)))]
+  [(*positive? t) (lambda/atomic (x y) (->jbool (or (<= x y) (=/t t x y))))])
 
 (define/atomic j:open (λ (y) (if (box? y) (unbox y) y)))
 
-; larger-than
+(define-customizable/cond (j:larger-than t)
+  current-default-tolerance
+  [(*zero? t) (lambda/atomic (x y) (->jbool (> x y)))]
+  [(*positive? t) (lambda/atomic (x y) (->jbool (and (> x y) (not (=/t t x y)))))])
+
 ; ceiling
-; larger-of
+
+(define-customizable/cond (j:larger-of t)
+  current-default-tolerance
+  [(*zero? t) (lambda/atomic (x y) (if (> x y) x y))]
+  [(*positive? t) (lambda/atomic (x y) (if (and (> x y) (not (=/t t x y))) x y))])
 
 (define-monad-alias j:increment add1)
 
-; larger-or-equal
+(define-customizable/cond (j:larger-than-or-equal t)
+  current-default-tolerance
+  [(*zero? t) (lambda/atomic (x y) (->jbool (>= x y)))]
+  [(*positive? t) (lambda/atomic (x y) (->jbool (or (>= x y) (=/t t x y))))])
 
 (define-monad-alias j:conjugate conjugate)
 
@@ -106,7 +156,11 @@
 ; nub
 
 ; nub-sieve
-; not-equal
+
+(define-customizable/cond (j:not-equal t)
+  current-default-tolerance
+  [(*zero? t) (lambda/atomic (x y) (->jbool (not (compare/numeric = equal? x y))))]
+  [(*positive? t) (lambda/atomic (x y) (->jbool (not (compare/numeric (λ (x y) (=/t t x y)) equal? x y))))])
 
 (define-monad-alias j:magnitude magnitude)
 

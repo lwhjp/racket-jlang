@@ -19,13 +19,13 @@
 (define TODO (λ args (error "not implemented")))
 
 (define-verbs/monad+dyad
-  ["=" TODO TODO]
-  ["<" box TODO]
-  ["<." TODO TODO]
-  ["<:" jlib:decrement TODO]
-  [">" jlib:open TODO]
-  [">." TODO TODO]
-  [">:" jlib:increment TODO]
+  ["=" TODO jlib:equal]
+  ["<" jlib:box jlib:less-than]
+  ["<." TODO jlib:lesser-of]
+  ["<:" jlib:decrement jlib:less-than-or-equal]
+  [">" jlib:open jlib:larger-than]
+  [">." TODO jlib:larger-of]
+  [">:" jlib:increment jlib:larger-than-or-equal]
   ["+" jlib:conjugate jlib:plus]
   ["+." jlib:real+imaginary TODO]
   ["+:" jlib:double jlib:not-or]
@@ -44,7 +44,7 @@
   ["$." TODO TODO]
   ["$:" TODO TODO] ; Not a monad/dyad pair
   ["~." TODO #f]
-  ["~:" TODO TODO]
+  ["~:" TODO jlib:not-equal]
   ["|" jlib:magnitude TODO]
   ["|." jlib:reverse TODO]
   ["|:" jlib:transpose TODO] ; Not a monad/dyad pair
@@ -140,7 +140,7 @@
   [":." TODO]
   ["::" TODO]
   [";." TODO]
-  ["!." TODO]
+  ["!." jlib:fit]
   ["!:" TODO]
   ["\"" TODO]
   ["`" TODO]
