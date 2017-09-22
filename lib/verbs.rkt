@@ -219,7 +219,6 @@
 
 (define/rank (j:right x y) y)
 
-;cap
 ;catalogue
 ;from
 ;head

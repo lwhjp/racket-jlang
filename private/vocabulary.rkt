@@ -1,7 +1,8 @@
 #lang racket/base
 
 (require (for-syntax racket/base
-                     racket/syntax)
+                     racket/syntax
+                     "../number.rkt")
          racket/provide
          (prefix-in jlib: "../lib.rkt")
          "coupla.rkt"
@@ -13,12 +14,12 @@
      (with-syntax ([j-id (format-id #'j-id-str "j:~a" (syntax-e #'j-id-str))])
        #'(define j-id expr))]))
 
-(define-syntax-rule (define-verbs/monad+dyad [id-str monad dyad] ...)
-  (begin (define-word id-str (make-verb (string->symbol id-str) monad dyad)) ...))
+(define-syntax-rule (define-verbs [id-str proc ...] ...)
+  (begin (define-word id-str (make-primitive-verb (string->symbol id-str) proc ...)) ...))
 
 (define TODO (λ args (error "not implemented")))
 
-(define-verbs/monad+dyad
+(define-verbs
   ["=" TODO jlib:equal]
   ["<" jlib:box jlib:less-than]
   ["<." TODO jlib:lesser-of]
@@ -60,7 +61,6 @@
   ["/:" TODO TODO]
   ["\\:" TODO TODO]
   ["[" jlib:same jlib:left]
-  ["[:" TODO TODO] ; Special
   ["]" jlib:same jlib:right]
   ["{" TODO TODO]
   ["{." TODO TODO]
@@ -91,31 +91,27 @@
   ["u:" TODO TODO]
   ["x:" TODO TODO])
 
-(define-word "_:" (constant-verb +inf.0))
-(define-word "_9:" (constant-verb -9))
-(define-word "_8:" (constant-verb -8))
-(define-word "_7:" (constant-verb -7))
-(define-word "_6:" (constant-verb -6))
-(define-word "_5:" (constant-verb -5))
-(define-word "_4:" (constant-verb -4))
-(define-word "_3:" (constant-verb -3))
-(define-word "_2:" (constant-verb -2))
-(define-word "_1:" (constant-verb -1))
-(define-word "0:" (constant-verb 0))
-(define-word "1:" (constant-verb 1))
-(define-word "2:" (constant-verb 2))
-(define-word "3:" (constant-verb 3))
-(define-word "4:" (constant-verb 4))
-(define-word "5:" (constant-verb 5))
-(define-word "6:" (constant-verb 6))
-(define-word "7:" (constant-verb 7))
-(define-word "8:" (constant-verb 8))
-(define-word "9:" (constant-verb 9))
+(define-word "[:" (make-cap '|[:|))
 
-(define-syntax-rule (define-adverbs/monad+dyad [id-str monad dyad] ...)
-  (begin (define-word id-str (adverb (string->symbol id-str) (λ (u) (verb #f (monad u) (dyad u))))) ...))
+(define-syntax-rule (define-constant-verb id-str v)
+  (define-word id-str (make-primitive-verb (string->symbol id-str) (lambda args v))))
 
-(define-adverbs/monad+dyad
+(define-syntax (define-constant-verbs stx)
+  (syntax-case stx ()
+    [(_ j-val ...)
+     (let ([j-val-strs (syntax->datum #'(j-val ...))])
+       (with-syntax ([(id-str ...) (map (λ (j-val) (string-append j-val ":")) j-val-strs)]
+                     [(v ...) (map string->number/j j-val-strs)])
+         #'(begin (define-constant-verb id-str v) ...)))]))
+
+(define-constant-verbs
+  "_" "_9" "_8" "_7" "_6" "_5" "_4" "_3" "_2" "_1"
+  "0" "1" "2" "3" "4" "5" "6" "7" "8" "9")
+
+(define-syntax-rule (define-adverbs [id-str proc ...] ...)
+  (begin (define-word id-str (make-primitive-adverb (string->symbol id-str) proc ...)) ...))
+
+(define-adverbs
   ["~" jlib:reflex jlib:passive]
   ["/" jlib:insert (λ args TODO)]
   ["/." TODO TODO]
@@ -123,13 +119,13 @@
   ["\\." TODO TODO]
   ["}" TODO TODO]
   ["b." TODO TODO]
-  ["f." TODO TODO]
-  ["M." TODO TODO]
-  ["t." TODO TODO]
-  ["t:" TODO TODO])
+  ["f." TODO]
+  ["M." TODO]
+  ["t." TODO]
+  ["t:" TODO])
 
 (define-syntax-rule (define-conjunctions [id-str proc] ...)
-  (begin (define-word id-str (conjunction (string->symbol id-str) proc)) ...))
+  (begin (define-word id-str (make-primitive-conjunction (string->symbol id-str) proc)) ...))
 
 (define-conjunctions
   ["^:" TODO]

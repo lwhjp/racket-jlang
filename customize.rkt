@@ -6,6 +6,7 @@
  (contract-out
   [customizable? predicate/c]
   [customize (-> customizable? any/c any/c)]
+  [customizable-procedure (-> (-> any/c procedure?) procedure? customizable?)]
   [make-customizable-procedure (-> procedure? any/c customizable?)])
  define-customizable/cond
  prop:customize)
@@ -31,12 +32,12 @@
 (define (customize c v)
   ((get-customize c) c v))
 
-(define (make-customizable-procedure proc default)
+(define (make-customizable-procedure customize-proc default)
   (customizable-procedure
-   proc
+   customize-proc
    (if (procedure? default)
-       (λ args (apply (proc (default)) args))
-       (proc default))))
+       (λ args (apply (customize-proc (default)) args))
+       (customize-proc default))))
 
 (define-syntax (define-customizable/cond stx)
   (syntax-parse stx #:literals (else)

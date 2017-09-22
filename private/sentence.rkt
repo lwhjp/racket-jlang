@@ -1,7 +1,9 @@
 #lang racket/base
 
+(provide
+ sentence)
+
 (require racket/match
-         "../rank.rkt"
          "coupla.rkt"
          "locale.rkt"
          "word.rkt")
@@ -44,43 +46,3 @@
                                    (name-ref v)
                                    v)
                                stack)))])])))
-
-(define (make-fork f g h)
-  ; TODO: capped fork
-  (cond
-    [(verb? f) (verb
-                #f
-                (lambda/rank (y) (g (f y) (h y)))
-                (lambda/rank (x y) (g (f x y) (h x y))))]
-    [(noun? f) (verb
-                #f
-                (lambda/rank (y) (g f (h y)))
-                (lambda/rank (x y) (g f (h x y))))]
-    [else (error "invalid fork")]))
-
-(define (make-train g h)
-  (cond
-    [(and (adv? g) (adv? h)) (adverb #f (compose g h))]
-    [(and (conj? g) (noun? h)) (adverb #f (λ (y) (g y h)))]
-    [(and (conj? g) (verb? h)) (adverb #f (λ (y) (g y h)))]
-    [(and (noun? g) (conj? h)) (adverb #f (λ (y) (h g y)))]
-    [(and (verb? g) (conj? h)) (adverb #f (λ (y) (h g y)))]
-    [(and (verb? g) (verb? h)) (verb
-                                #f
-                                (lambda/rank (y) (g y (h y)))
-                                (lambda/rank (x y) (g x (h y))))]
-    [else (error "invalid train")]))
-
-#|
-;; TEST
-
-(require math/array (prefix-in j: "vocabulary.rkt") "locale.rkt" racket/pretty)
-;(sentence (verb #f j:plus) (adverb j:insert) (noun (array #[1 2 3])))
-;(sentence 1 (verb #f j:plus) 2)
-(with-new-environment
- (λ ()
-   (sentence (name #f #f 'a) j:=: (array #[1 2 3]))
-   (sentence (name #f #f 'b) j:=: j:+ j:/ 2 j:* (name #f #f 'a))
-   (sentence (name #f #f 'b))))
-|#
-(provide sentence)

@@ -19,7 +19,7 @@
   (syntax-case stx ()
     [(_ . id)
      ; TODO: locative
-     #'(name 'id #f 'id)]))
+     #'(name #f 'id)]))
 
 (define-syntax (#%noun stx)
   (syntax-case stx ()

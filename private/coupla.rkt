@@ -3,7 +3,7 @@
 (require "locale.rkt"
          "word.rkt")
 
-(struct coupla word (proc)
+(struct coupla word (name proc)
   #:property prop:procedure (struct-field-index proc))
 
 (define-values (coupla/global coupla/local)
