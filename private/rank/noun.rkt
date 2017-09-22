@@ -74,8 +74,9 @@
 
 (define (in-items v)
   (cond
-    [(array? v) (if (zero? (array-dims v))
-                    (in-value (unsafe-array-ref v #[]))
-                    (in-array-axis v 0))]
+    [(array? v) (case (array-dims v)
+                  [(0) (in-value (unsafe-array-ref v #[]))]
+                  [(1) (in-array v)]
+                  [else (in-array-axis v 0)])]
     [(and (sequence? v) (not (number? v))) v]
     [else (in-value v)]))
