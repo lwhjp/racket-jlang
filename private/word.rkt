@@ -1,6 +1,7 @@
 #lang racket/base
 
 (require math/array
+         "../customize.rkt"
          "../rank.rkt")
 
 (struct word (spelling)
@@ -25,6 +26,21 @@
     ; TODO: check presence of monad / dyad
     [(v y) ((verb-monad v) y)]
     [(v x y) ((verb-dyad v) x y)]))
+
+(struct customizable-verb verb ()
+  #:property prop:customize
+  (λ (v param)
+    (verb
+     #f
+     (let ([monad (verb-monad v)])
+       (if (customizable? monad) (customize monad param) monad))
+     (let ([dyad (verb-dyad v)])
+       (if (customizable? dyad) (customize dyad param) dyad)))))
+
+(define (make-verb spelling monad dyad)
+  (if (or (customizable? monad) (customizable? dyad))
+      (customizable-verb spelling monad dyad)
+      (verb spelling monad dyad)))
 
 (define (constant-verb v)
   (verb #f

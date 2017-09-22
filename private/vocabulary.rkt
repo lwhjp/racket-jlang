@@ -14,7 +14,7 @@
        #'(define j-id expr))]))
 
 (define-syntax-rule (define-verbs/monad+dyad [id-str monad dyad] ...)
-  (begin (define-word id-str (verb (string->symbol id-str) monad dyad)) ...))
+  (begin (define-word id-str (make-verb (string->symbol id-str) monad dyad)) ...))
 
 (define TODO (λ args (error "not implemented")))
 

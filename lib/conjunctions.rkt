@@ -1,6 +1,8 @@
 #lang racket/base
 
-(require "../rank.rkt")
+(require (for-syntax racket/base)
+         racket/provide
+         "../customize.rkt")
 
 ;power
 ;determinant
@@ -12,7 +14,9 @@
 ;obverse
 ;adverse
 ;cut
-;fit
+
+(define j:fit customize)
+
 ;foreign
 ;rank
 ;tie
@@ -30,4 +34,8 @@
 ;spread
 ;taylor-approximation
 
-(provide (all-defined-out))
+(provide (filtered-out
+          (λ (name)
+            (and (regexp-match? #rx"^j:." name)
+                 (substring name 2)))
+          (all-defined-out)))
