@@ -4,7 +4,10 @@
                      racket/syntax
                      "../number.rkt")
          racket/provide
-         (prefix-in jlib: "../lib.rkt")
+         (prefix-in ja: "../lib/adverbs.rkt")
+         (prefix-in jc: "../lib/conjunctions.rkt")
+         (prefix-in jn: "../lib/nouns.rkt")
+         (prefix-in jv: "../lib/verbs.rkt")
          "coupla.rkt"
          "word.rkt")
 
@@ -20,48 +23,48 @@
 (define TODO (λ args (error "not implemented")))
 
 (define-verbs
-  ["=" TODO jlib:equal]
-  ["<" jlib:box jlib:less-than]
-  ["<." TODO jlib:lesser-of]
-  ["<:" jlib:decrement jlib:less-than-or-equal]
-  [">" jlib:open jlib:larger-than]
-  [">." TODO jlib:larger-of]
-  [">:" jlib:increment jlib:larger-than-or-equal]
-  ["+" jlib:conjugate jlib:plus]
-  ["+." jlib:real+imaginary TODO]
-  ["+:" jlib:double jlib:not-or]
-  ["*" TODO jlib:times]
-  ["*." jlib:length+angle TODO]
-  ["*:" jlib:square jlib:not-and]
-  ["-" jlib:negate jlib:minus]
-  ["-." jlib:not TODO]
-  ["-:" jlib:halve TODO]
-  ["%" jlib:reciprocal jlib:divided-by]
+  ["=" TODO jv:equal]
+  ["<" jv:box jv:less-than]
+  ["<." TODO jv:lesser-of]
+  ["<:" jv:decrement jv:less-than-or-equal]
+  [">" jv:open jv:larger-than]
+  [">." TODO jv:larger-of]
+  [">:" jv:increment jv:larger-than-or-equal]
+  ["+" jv:conjugate jv:plus]
+  ["+." jv:real+imaginary TODO]
+  ["+:" jv:double jv:not-or]
+  ["*" TODO jv:times]
+  ["*." jv:length+angle TODO]
+  ["*:" jv:square jv:not-and]
+  ["-" jv:negate jv:minus]
+  ["-." jv:not TODO]
+  ["-:" jv:halve TODO]
+  ["%" jv:reciprocal jv:divided-by]
   ["%." TODO TODO]
-  ["%:" jlib:square-root jlib:root]
-  ["^" jlib:exponential jlib:power]
-  ["^." jlib:natural-log jlib:logarithm]
-  ["$" jlib:shape-of TODO]
+  ["%:" jv:square-root jv:root]
+  ["^" jv:exponential jv:power]
+  ["^." jv:natural-log jv:logarithm]
+  ["$" jv:shape-of TODO]
   ["$." TODO TODO]
   ["$:" TODO TODO] ; Not a monad/dyad pair
   ["~." TODO #f]
-  ["~:" TODO jlib:not-equal]
-  ["|" jlib:magnitude TODO]
-  ["|." jlib:reverse TODO]
-  ["|:" jlib:transpose TODO] ; Not a monad/dyad pair
-  ["," jlib:ravel TODO]
+  ["~:" TODO jv:not-equal]
+  ["|" jv:magnitude TODO]
+  ["|." jv:reverse TODO]
+  ["|:" jv:transpose TODO] ; Not a monad/dyad pair
+  ["," jv:ravel TODO]
   [",." TODO TODO]
   [",:" TODO TODO]
   [";" TODO TODO]
   [";:" TODO TODO]
-  ["#" jlib:tally TODO]
+  ["#" jv:tally TODO]
   ["#." TODO TODO]
   ["#:" TODO TODO]
   ["!" TODO TODO]
   ["/:" TODO TODO]
   ["\\:" TODO TODO]
-  ["[" jlib:same jlib:left]
-  ["]" jlib:same jlib:right]
+  ["[" jv:same jv:left]
+  ["]" jv:same jv:right]
   ["{" TODO TODO]
   ["{." TODO TODO]
   ["{:" TODO #f]
@@ -76,17 +79,17 @@
   ["C." TODO TODO]
   ["e." TODO TODO]
   ["E." #f TODO]
-  ["i." jlib:integers TODO]
+  ["i." jv:integers TODO]
   ["i:" TODO TODO]
   ["I." TODO TODO]
-  ["j." jlib:imaginary jlib:complex]
+  ["j." jv:imaginary jv:complex]
   ["L." TODO #f]
   ["o." TODO TODO]
   ["p." TODO TODO]
   ["p.." TODO TODO]
-  ["p:" jlib:primes TODO]
-  ["q:" jlib:prime-factors TODO]
-  ["r." jlib:angle jlib:polar]
+  ["p:" jv:primes TODO]
+  ["q:" jv:prime-factors TODO]
+  ["r." jv:angle jv:polar]
   ["s:" TODO TODO]
   ["u:" TODO TODO]
   ["x:" TODO TODO])
@@ -112,8 +115,8 @@
   (begin (define-word id-str (make-primitive-adverb (string->symbol id-str) proc ...)) ...))
 
 (define-adverbs
-  ["~" jlib:reflex jlib:passive]
-  ["/" jlib:insert (λ args TODO)]
+  ["~" ja:reflex ja:passive]
+  ["/" ja:insert (λ args TODO)]
   ["/." TODO TODO]
   ["\\" TODO TODO]
   ["\\." TODO TODO]
@@ -128,26 +131,26 @@
   (begin (define-word id-str (make-primitive-conjunction (string->symbol id-str) proc)) ...))
 
 (define-conjunctions
-  ["^:" TODO]
+  ["^:" jc:power]
   ["." TODO]
   [".." TODO]
   [".:" TODO]
-  [":" TODO]
+  [":" jc:monad+dyad] ; TODO: explicit definition
   [":." TODO]
-  ["::" TODO]
+  ["::" (λ (u v) (jc:adverse u v #:pred exn:fail?))] ; TODO: only catch J errors
   [";." TODO]
-  ["!." jlib:fit]
+  ["!." jc:fit]
   ["!:" TODO]
-  ["\"" TODO]
+  ["\"" jc:rank]
   ["`" TODO]
   ["`:" TODO]
-  ["@" TODO]
+  ["@" jc:atop]
   ["@." TODO]
-  ["@:" TODO]
-  ["&" TODO]
+  ["@:" jc:at]
+  ["&" (λ (x y) (if (and (procedure? x) (procedure? y)) (jc:compose x y) (jc:bond x y)))]
   ["&." TODO]
   ["&.:" TODO]
-  ["&:" TODO]
+  ["&:" jc:appose]
   ["d." TODO]
   ["D." TODO]
   ["D:" TODO]
@@ -158,8 +161,8 @@
 
 (define-word "=." coupla/local)
 (define-word "=:" coupla/global)
-(define-word "a." jlib:alphabet)
-(define-word "a:" jlib:ace)
+(define-word "a." jn:alphabet)
+(define-word "a:" jn:ace)
 
 (provide (filtered-out
           (λ (name)
