@@ -113,6 +113,10 @@ A ranked procedure implicitly iterates over its arguments according to its rank.
           (define/rank (integers [y 1]) (index-array (array->vector (->array y))))
           (apply/rank integers (list (array #[#[2 2] #[3 3]])) #:fill 9)]
 
+@defthing[procedure-rank/c contract?]{
+  Equivalent to @racket[(listof (or/c exact-integer? #f))].
+}
+
 @defthing[rankable-procedure/c contract?]{
   A contract which accepts procedures that have no required keyword arguments
   and return a single value.
@@ -135,11 +139,16 @@ A ranked procedure implicitly iterates over its arguments according to its rank.
 }
 
 @defproc[(make-ranked-procedure [proc rankable-procedure/c]
-                                [get-rank (-> exact-positive-integer?
-                                              (listof (or/c exact-integer? #f)))])
+                                [rank-spec (or/c (listof procedure-rank/c)
+                                                 (-> exact-positive-integer?
+                                                     procedure-rank/c))])
          ranked-procedure?]{
-  Create a ranked procedure from @racket[proc], with ranks determined by calling
-  @racket[get-rank] for applicable arities.
+  Create a ranked procedure from @racket[proc], with ranks determined by @racket[rank-spec].
+
+  If @racket[rank-spec] is a list, it must contain as many items as @racket[proc] has
+  arities, with each item being the same length as the number of arguments accepted.
+  Otherwise, @racket[rank-spec] must be a procedure accepting one argument @var{arity},
+  and must return a list of that length.
 }
 
 @defproc[(atomic-procedure->ranked-procedure [proc rankable-procedure/c])
@@ -149,7 +158,7 @@ A ranked procedure implicitly iterates over its arguments according to its rank.
 
 @defproc[(procedure-rank [proc (or/c procedure? ranked-procedure?)]
                          [arity exact-positive-integer?])
-         (listof (or/c exact-integer? #f))]{
+         procedure-rank/c]{
   Returns the rank of @racket[proc] when applied with @racket[arity] arguments.
 }
 
@@ -169,4 +178,14 @@ A ranked procedure implicitly iterates over its arguments according to its rank.
 
 @defform[(define/rank (id arg ...) body ...+)]{
   Shorthand for defining ranked procedures.
+}
+
+@defthing[prop:rank struct-type-property?]{
+  A structure type property to provide the rank of structure types whose instances
+  can be applied as procedures.
+
+  The @racket[prop:rank] property value must be a procedure which accepts two arguments.
+  The instance is passed as the first argument, and the second is the arity for which
+  a rank is required. The procedure must return a value accepted by
+  @racket[procedure-rank/c] and of length equal to the arity.
 }

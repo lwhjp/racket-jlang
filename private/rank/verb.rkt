@@ -2,14 +2,13 @@
 
 (require racket/contract/base)
 
-(define (list-length-exactly/c n)
-  (unless (exact-nonnegative-integer? n)
-    (raise-argument-error 'list-length-exactly/c "exact-nonnegative-integer?" n))
-  (flat-named-contract
-   `(list-length-exactly/c ,n)
-   (λ (v) (and (list? v) (eqv? n (length v))))))
+(define argument-rank/c (or/c exact-integer? #f))
 
-(define procedure-rank/c (or/c exact-integer? #f))
+(define procedure-rank/c (listof argument-rank/c))
+
+(define procedure-rank-spec/c
+  (or/c (listof procedure-rank/c)
+        (-> exact-positive-integer? procedure-rank/c)))
 
 (define rankable-procedure/c
   (and/c procedure?
@@ -21,28 +20,28 @@
          (unconstrained-domain-> any/c)))
 
 (provide
- list-length-exactly/c
+ argument-rank/c
  procedure-rank/c
  rankable-procedure/c
+ ranked-procedure?
  lambda/rank
  case-lambda/rank
  define/rank
  (contract-out
-  [ranked-procedure? predicate/c]
+  [prop:rank (struct-type-property/c
+              (-> any/c exact-positive-integer? procedure-rank/c))]
   [apply/rank (->* (procedure?)
                    (#:fill any/c)
                    #:rest (*list/c any/c list?)
                    normalized-noun?)]
-  [make-ranked-procedure
-   (-> rankable-procedure/c
-       (->i ([arity exact-positive-integer?])
-            [_ (arity) (and/c (listof procedure-rank/c)
-                              (list-length-exactly/c arity))])
-       ranked-procedure?)]
+  [make-ranked-procedure (-> rankable-procedure/c
+                             procedure-rank-spec/c
+                             ranked-procedure?)]
   [atomic-procedure->ranked-procedure (-> rankable-procedure/c
                                           ranked-procedure?)]
-  [procedure-rank (-> procedure? exact-positive-integer?
-                      (listof procedure-rank/c))]))
+  [procedure-rank (-> procedure?
+                      exact-positive-integer?
+                      procedure-rank/c)]))
 
 (require (for-syntax racket/base
                      syntax/parse)
@@ -50,18 +49,25 @@
          "frame.rkt"
          "noun.rkt")
 
-(struct ranked-procedure
+(define-values (prop:rank has-rank? get-rank)
+  (make-struct-type-property 'rank))
+
+(define (ranked-procedure? v)
+  (and (procedure? v) (has-rank? v)))
+
+(struct ranked-procedure-wrapper
   (proc
    get-rank
-   wrapper)
-  #:property prop:procedure (struct-field-index wrapper))
+   invoke)
+  #:property prop:procedure (struct-field-index invoke)
+  #:property prop:rank (λ (p arity) ((ranked-procedure-wrapper-get-rank p) arity)))
 
 (define current-fill (make-parameter (void)))
 
 (define (apply/rank #:fill [fill (current-fill)] proc . args)
   (define real-proc
-    (if (ranked-procedure? proc)
-        (ranked-procedure-proc proc)
+    (if (ranked-procedure-wrapper? proc)
+        (ranked-procedure-wrapper-proc proc)
         proc))
   (define vs (map normalize-noun (apply list* args)))
   (define arity (length vs))
@@ -72,16 +78,17 @@
         (normalize-noun (real-proc))
         (apply map/frame/fill real-proc (procedure-rank proc arity) fill vs))))
 
-(define (make-ranked-procedure proc get-rank)
+(define (make-ranked-procedure proc rank-spec)
   (define p
-    (ranked-procedure
+    (ranked-procedure-wrapper
      proc
-     get-rank
+     (cond
+       [(procedure? rank-spec) rank-spec]
+       [(eqv? 1 (length rank-spec)) (λ (arity) (car rank-spec))]
+       [else (λ (arity) (or (findf (λ (r) (eqv? arity (length r))) rank-spec)
+                            (error "no rank found for arity:" arity)))])
      (procedure-reduce-arity
-      (let ([wrapper (λ args (apply/rank p args))])
-        (cond
-          [(object-name proc) => (λ (name) (procedure-rename wrapper name))]
-          [else wrapper]))
+      (λ args (apply/rank p args))
       (procedure-arity proc))))
   p)
 
@@ -94,8 +101,12 @@
      'procedure-rank
      "arity accepted by procedure"
      arity))
-  (if (ranked-procedure? proc)
-      ((ranked-procedure-get-rank proc) arity)
+  (if (has-rank? proc)
+      (let ([rank ((get-rank proc) proc arity)])
+        (unless (eqv? arity (length rank))
+          (error (format "expected rank of length ~a;\n  given: ~a\n  in: ~a\n"
+                         arity (length rank) proc)))
+        rank)
       (make-list arity 0)))
 
 (begin-for-syntax
@@ -108,19 +119,14 @@
 (define-syntax (lambda/rank stx)
   (syntax-parse stx
     [(_ (arg:arg-decl ...) body:expr ...+)
-     (with-syntax ([proc (syntax/loc stx (lambda (arg.id ...) body ...))]
-                   [get-rank #'(λ (arity) (list arg.rank ...))])
-       #'(make-ranked-procedure proc get-rank))]))
+     (with-syntax ([proc (syntax/loc stx (lambda (arg.id ...) body ...))])
+       #'(make-ranked-procedure proc '((arg.rank ...))))]))
 
 (define-syntax (case-lambda/rank stx)
   (syntax-parse stx
     [(_ [(arg:arg-decl ...) body:expr ...+] ...)
-     (with-syntax ([proc (syntax/loc stx (case-lambda [(arg.id ...) body ...] ...))]
-                   [(case-arity ...) (map length (syntax->datum #'((arg ...) ...)))])
-       #'(make-ranked-procedure
-          proc
-          (let ([rank-map (make-immutable-hasheqv '((case-arity arg.rank ...) ...))])
-            (λ (arity) (hash-ref rank-map arity)))))]))
+     (with-syntax ([proc (syntax/loc stx (case-lambda [(arg.id ...) body ...] ...))])
+       #'(make-ranked-procedure proc '((arg.rank ...) ...)))]))
 
 (define-syntax (define/rank stx)
   (syntax-parse stx
