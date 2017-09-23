@@ -1,7 +1,6 @@
 #lang racket/base
 
 (provide
- (struct-out word)
  adverb? make-primitive-adverb
  conjunction? make-primitive-conjunction
  (struct-out name)
@@ -11,14 +10,12 @@
 
 (require math/array
          "../customize.rkt"
-         "../rank.rkt")
+         "../rank.rkt"
+         "proc.rkt")
 
-(define (combine m d)
-  (case-lambda [(y) (m y)] [(x y) (d x y)]))
+(define combine combine-monad+dyad)
 
-(struct word ())
-
-(struct adverb word (proc)
+(struct adverb (proc)
   #:property prop:procedure (struct-field-index proc))
 
 (struct adverb:primitive adverb (name))
@@ -30,7 +27,7 @@
 
 (struct adverb:compound adverb ())
 
-(struct conjunction word (proc)
+(struct conjunction (proc)
   #:property prop:procedure (struct-field-index proc))
 
 (struct conjunction:primitive conjunction (name))
@@ -40,35 +37,19 @@
    (λ (x y) (verb:compound (proc x y)))
    name))
 
-(struct name word (locale id))
+(struct name (locale id))
 
-(struct verb word (proc)
-  #:property prop:procedure (struct-field-index proc))
+(struct verb (proc)
+  #:property prop:procedure (struct-field-index proc)
+  #:property prop:rank (λ (v arity) (procedure-rank (verb-proc v) arity))
+  #:property prop:customize (λ (v param) (verb:compound (customize (verb-proc v) param))))
 
 (struct verb:primitive verb (name))
 
-(struct verb:customizable verb:primitive ()
-  #:property prop:customize
-  (λ (v param) (customize (verb-proc v) param)))
-
 (define make-primitive-verb
   (case-lambda
-    [(name proc)
-     ((if (customizable? proc)
-          verb:customizable
-          verb:primitive)
-      proc
-      name)]
-    [(name monad dyad)
-     (make-primitive-verb
-      name
-      (if (or (customizable? monad) (customizable? dyad))
-          (customizable-procedure
-           (λ (param)
-             (combine (if (customizable? monad) (customize monad param) monad)
-                      (if (customizable? dyad) (customize dyad param) dyad)))
-           (combine monad dyad))
-          (combine monad dyad)))]))
+    [(name proc) (verb:primitive proc name)]
+    [(name monad dyad) (verb:primitive (combine monad dyad) name)]))
 
 (struct verb:cap verb:primitive ())
 

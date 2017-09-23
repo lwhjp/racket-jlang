@@ -6,13 +6,15 @@
          racket/provide
          racket/sequence
          "../customize.rkt"
-         "../rank.rkt")
+         "../rank.rkt"
+         "../private/proc.rkt")
 
 (define (j:power u n)
   ; TODO: inverse, boxed, gerund, infinite
-  (case-lambda/rank
+  (make-j-procedure
+   (case-lambda/rank
     [(y) (for/fold ([y y]) ([i (in-range n)]) (u y))]
-    [(x y) (for/fold ([y y]) ([i (in-range n)]) (u x y))]))
+    [(x y) (for/fold ([y y]) ([i (in-range n)]) (u x y))])))
 
 ;determinant
 ;dot-product
@@ -21,18 +23,18 @@
 ;explicit
 
 (define (j:monad+dyad u v)
-  (define monad-rank (procedure-rank u 1))
-  (define dyad-rank (procedure-rank v 2))
-  (make-ranked-procedure
-   (case-lambda [(y) (u y)] [(x y) (v x y)])
-   (λ (arity) (case arity [(1) monad-rank] [(2) dyad-rank]))))
+  (make-j-procedure
+   (make-ranked-procedure
+    (case-lambda [(y) (u y)] [(x y) (v x y)])
+    (list (procedure-rank u 1) (procedure-rank v 2)))))
 
 ;obverse
 
 (define (j:adverse u v #:pred [pred exn:fail?])
-  (make-ranked-procedure
-   (λ args (with-handlers ([pred (apply v args)]) (apply u args)))
-   (λ (arity) (make-list arity #f))))
+  (make-j-procedure
+   (make-ranked-procedure
+    (λ args (with-handlers ([pred (apply v args)]) (apply u args)))
+    (λ (arity) (make-list arity #f)))))
 
 ;cut
 
@@ -50,57 +52,65 @@
   (unless (and (<= (noun-rank n) 1)
                (<= 1 (noun-tally n) 3))
     (error "invalid rank specifier:" n))
-  (define-values (monad-rank dyad-rank)
+  (define rank
     (match (map ->rank (sequence->list (in-items n)))
-      [(list r) (values (list r) (list r r))]
-      [(list l r) (values (list r) (list l r))]
-      [(list m l r) (values (list m) (list l r))]))
-  (make-ranked-procedure
-   (if (procedure? m)
-       (case-lambda [(y) (m y)] [(x y) (m x y)])
-       (case-lambda [(y) m] [(x y) m]))
-   (λ (arity) (case arity [(1) monad-rank] [(2) dyad-rank]))))
+      [(list r) `((,r) (,r ,r))]
+      [(list l r) `((,r) (,l ,r))]
+      [(list m l r) `((,m) (,l ,r))]))
+  (make-j-procedure
+   (make-ranked-procedure
+    (if (procedure? m)
+        (case-lambda [(y) (m y)] [(x y) (m x y)])
+        (case-lambda [(y) m] [(x y) m]))
+    rank)))
 
 ;tie
 ;evoke-gerund
 
 (define (j:atop u v)
-  (make-ranked-procedure
-   (compose1 u v)
-   (λ (arity) (procedure-rank v arity))))
+  (make-j-procedure
+   (make-ranked-procedure
+    (compose1 u v)
+    (λ (arity) (procedure-rank v arity)))))
 
 ;agenda
 
 (define (j:at u v)
-  (make-ranked-procedure
-   (compose1 u v)
-   (λ (arity) (make-list arity #f))))
+  (make-j-procedure
+   (make-ranked-procedure
+    (compose1 u v)
+    (λ (arity) (make-list arity #f)))))
 
 (define (j:bond x y)
   (define proc
     (match* (x y)
       [(m (? procedure? v)) (λ (y) (v m y))]
       [((? procedure? u) n) (λ (y) (u y n))]))
-  (case-lambda/rank
-   [(y) (proc y)]
-   [([x 0] y) (j:power proc x) y]))
+  (make-j-procedure
+   (case-lambda/rank
+    [(y) (proc y)]
+    [([x 0] y) (j:power proc x) y])))
 
 (define (j:compose u v)
   (define mv (procedure-rank v 1))
-  (make-ranked-procedure
-   (case-lambda
-     [(y) (u (v y))]
-     [(x y) (u (v x) (v y))])
-   (λ (arity) (make-list arity mv))))
+  (make-j-procedure
+   (make-ranked-procedure
+    (procedure-reduce-arity
+     (lambda args
+       (apply u (map v args)))
+     (procedure-arity u))
+    (λ (arity) (make-list arity mv)))))
 
 ;under
 
 (define (j:appose u v)
-  (make-ranked-procedure
-   (case-lambda
-     [(y) (u (v y))]
-     [(x y) (u (v x) (v y))])
-   (λ (arity) (make-list arity #f))))
+  (make-j-procedure
+   (make-ranked-procedure
+    (procedure-reduce-arity
+     (lambda args
+       (apply u (map v args)))
+     (procedure-arity u))
+    (λ (arity) (make-list arity #f)))))
 
 ;derivative
 ;secant-slope

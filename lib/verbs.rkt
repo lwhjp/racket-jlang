@@ -9,6 +9,7 @@
          racket/vector
          "../customize.rkt"
          "../rank.rkt"
+         "../private/proc.rkt"
          "parameters.rkt")
 
 (define-syntax-rule (lambda/atomic (arg ...) body ...)

@@ -1,21 +1,25 @@
 #lang racket/base
 
-(require "../rank.rkt")
+(require "../rank.rkt"
+         "../private/proc.rkt")
 
 ; TODO: check arity
 
 (define (reflex u)
-  (lambda/rank (y) (u y y)))
+  (make-j-procedure
+   (lambda/rank (y) (u y y))))
 
 (define (passive u)
-  (lambda/rank (x y) (u y x)))
+  (make-j-procedure
+   (lambda/rank (x y) (u y x))))
 
 (define (insert u)
   ; TODO: gerund
-  (lambda/rank (y)
-    (for/fold ([a 0 #| XXX: identity |#])
-              ([t (in-items y)])
-      (u a t))))
+  (make-j-procedure
+   (lambda/rank (y)
+     (for/fold ([a 0 #| XXX: identity |#])
+               ([t (in-items y)])
+       (u a t)))))
 
 ;table
 ;oblique
