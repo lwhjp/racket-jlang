@@ -12,6 +12,11 @@
          "../private/proc.rkt"
          "parameters.rkt")
 
+(define (monad proc) (procedure-reduce-arity proc 1))
+(define (dyad proc) (procedure-reduce-arity proc 2))
+
+(define (self-inverse proc) (make-j-procedure proc #:obverse proc))
+
 (define-syntax-rule (lambda/atomic (arg ...) body ...)
   (atomic-procedure->ranked-procedure
    (lambda (arg ...) body ...)))
@@ -20,10 +25,10 @@
   (define id (atomic-procedure->ranked-procedure proc)))
 
 (define-syntax-rule (define-monad-alias id proc)
-  (define/atomic id (procedure-reduce-arity proc 1)))
+  (define/atomic id (monad proc)))
 
 (define-syntax-rule (define-dyad-alias id proc)
-  (define/atomic id (procedure-reduce-arity proc 2)))
+  (define/atomic id (dyad proc)))
 
 (define (->jbool v) (if v 1 0))
 
@@ -89,9 +94,12 @@
   [(*zero? t) (lambda/atomic (x y) (->jbool (>= x y)))]
   [(*positive? t) (lambda/atomic (x y) (->jbool (or (>= x y) (=/t t x y))))])
 
-(define-monad-alias j:conjugate conjugate)
+(define j:conjugate (self-inverse conjugate))
 
-(define-dyad-alias j:plus +)
+(define j:plus
+  (make-j-procedure
+   (dyad +)
+   #:obverse (λ (x y) (- y x))))
 
 (define/atomic j:real+imaginary (λ (y) (array #[(real-part y) (imag-part y)])))
 

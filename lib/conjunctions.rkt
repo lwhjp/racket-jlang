@@ -6,15 +6,18 @@
          racket/provide
          racket/sequence
          "../customize.rkt"
+         "../obverse.rkt"
          "../rank.rkt"
          "../private/proc.rkt")
 
 (define (j:power u n)
-  ; TODO: inverse, boxed, gerund, infinite
-  (make-j-procedure
-   (case-lambda/rank
-    [(y) (for/fold ([y y]) ([i (in-range n)]) (u y))]
-    [(x y) (for/fold ([y y]) ([i (in-range n)]) (u x y))])))
+  ; TODO: boxed, gerund, infinite
+  (cond
+    [(negative? n) (j:power (obverse u) (- n))]
+    [else (make-j-procedure
+           (case-lambda/rank
+            [(y) (for/fold ([y y]) ([i (in-range n)]) (u y))]
+            [(x y) (for/fold ([y y]) ([i (in-range n)]) (u x y))]))]))
 
 ;determinant
 ;dot-product

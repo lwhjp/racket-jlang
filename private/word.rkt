@@ -10,6 +10,7 @@
 
 (require math/array
          "../customize.rkt"
+         "../obverse.rkt"
          "../rank.rkt"
          "proc.rkt")
 
@@ -42,6 +43,7 @@
 (struct verb (proc)
   #:property prop:procedure (struct-field-index proc)
   #:property prop:rank (λ (v arity) (procedure-rank (verb-proc v) arity))
+  #:property prop:obverse (λ (v) (obverse (verb-proc v)))
   #:property prop:customize (λ (v param) (verb:compound (customize (verb-proc v) param))))
 
 (struct verb:primitive verb (name))
