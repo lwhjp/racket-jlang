@@ -1,19 +1,33 @@
 #lang racket/base
 
+(provide
+ #%datum
+ #%module-begin
+ #%top-interaction
+ #%name
+ #%noun
+ #%sentence)
+
 (require (for-syntax racket/base)
          (rename-in racket/base [#%module-begin racket-module-begin])
          math/array
+         racket/port
+         "eval.rkt"
          "locale.rkt"
          "sentence.rkt"
          "word.rkt")
 
 (define-syntax (#%module-begin stx)
   (syntax-case stx ()
-    [(_ body ...)
+    [(_ . str)
      #'(racket-module-begin
-        (current-j-locale 'base)
-        (current-j-private-vars (make-hasheq))
-        body ...)]))
+        (module configure-runtime racket/base
+          (require j/private/locale
+                   j/private/read)
+          (current-j-locale 'base)
+          (current-j-private-vars (make-hasheq))
+          (current-read-interaction read-j-syntax))
+        (with-input-from-string str execute/j))]))
 
 (define-syntax (#%name stx)
   (syntax-case stx ()
@@ -29,10 +43,3 @@
 (define-syntax (#%sentence stx)
   (syntax-case stx()
     [(_ word ...) #'(sentence word ...)]))
-
-(provide
- #%datum
- #%module-begin
- #%name
- #%noun
- #%sentence)

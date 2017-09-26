@@ -1,10 +1,12 @@
 #lang racket/base
 
-(require "private/eval.rkt"
-         "private/locale.rkt"
-         "rank.rkt")
+(provide j)
+
+(require racket/port
+         "private/eval.rkt"
+         "private/locale.rkt")
 
 (define (j str)
-  (eval/j str))
-
-(provide j)
+  (with-new-j-environment
+    (λ ()
+      (with-input-from-string str execute/j))))

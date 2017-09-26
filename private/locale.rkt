@@ -1,5 +1,16 @@
 #lang racket/base
 
+(provide
+ global-j-environment
+ current-j-environment
+ current-j-locale
+ current-j-private-vars
+ make-j-environment
+ with-new-j-environment
+ with-new-j-private-vars
+ name-ref
+ name-set!)
+
 (require data/gvector
          "word.rkt")
 
@@ -24,7 +35,13 @@
 
 (define current-j-private-vars (make-parameter (make-hasheq)))
 
-(define (with-new-private-vars thunk)
+(define (with-new-j-environment thunk)
+  (parameterize ([current-j-environment (make-j-environment)]
+                 [current-j-locale 'base]
+                 [current-j-private-vars (make-hasheq)])
+    (thunk)))
+
+(define (with-new-j-private-vars thunk)
   (parameterize ([current-j-private-vars (make-hasheq)])
     (thunk)))
 
@@ -71,12 +88,3 @@
                (error 'name-set! "already exists as private variable: ~a" v-id))
              (locale-set! (current-j-locale) v-id v)]
     [else (hash-set! (current-j-private-vars) v-id v)]))
-
-(provide global-j-environment
-         current-j-environment
-         current-j-locale
-         current-j-private-vars
-         make-j-environment
-         with-new-private-vars
-         name-ref
-         name-set!)
