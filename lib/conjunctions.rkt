@@ -1,13 +1,17 @@
 #lang racket/base
 
 (require (for-syntax racket/base)
+         math/array
          racket/list
          racket/match
+         racket/port
          racket/provide
          racket/sequence
+         racket/string
          "../customize.rkt"
          "../obverse.rkt"
          "../rank.rkt"
+         "../private/executor.rkt"
          "../private/proc.rkt")
 
 (define (j:power u n)
@@ -23,7 +27,56 @@
 ;dot-product
 ;even
 ;odd
-;explicit
+
+(define (j:explicit m n)
+  (define-values (noun-def str)
+    (let ([n (normalize-noun n)])
+      (cond
+        [(zero? n)
+         (define str
+           (string-join
+            (sequence->list (in-producer read-line (λ (str) (regexp-match? #rx"^\\)" str))))
+            "\n"))
+         (values str str)]
+        [(char? n)
+         (values n (list->string (list n)))]
+        [(and (eqv? 1 (array-dims n)) (array-andmap char? n))
+         (values n (list->string (array->list n)))]
+        [(and (eqv? 1 (noun-rank n)) (array-andmap box? n))
+         (define lines
+           (map (λ (e)
+                  (define str (unbox e))
+                  (unless (and (array? str) (eqv? 1 (array-dims str)) (array-andmap char? str))
+                    (error "invalid argument:" n))
+                  (list->string (array->list str)))
+                (array->list n)))
+         (values n (string-join lines "\n"))]
+      [(and (eqv? 2 (noun-rank n)) (array-andmap char? n))
+       (values n (map list->string (array->list-array n)))]
+      [else (error "invalid argument:" n)])))
+  ; TODO: need to annotate adverb etc.
+  ; TODO: control statements
+  (define (eval str)
+    (with-input-from-string str (current-j-executor)))
+  (let ([m (normalize-noun m)])
+    (cond
+      [(= 0 m) noun-def]
+      [(= 1 m) (eval str)]
+      [(= 2 m) (eval str)]
+      [(= 3 m) (let-values ([(monad-def dyad-def)
+                             (apply
+                              (λ (m [d #f] . rest)
+                                (unless (null? rest) (error "invalid definition"))
+                                (values m d))
+                              (string-split str #px"(?m:^\\s*:\\s*$)"))])
+                 (if dyad-def
+                     (j:monad+dyad (eval monad-def) (eval dyad-def))
+                     (let ([m (eval monad-def)])
+                       (lambda/rank (y) (m y)))))]
+      [(= 4 m) (let ([d (eval str)])
+                 (lambda/rank (x y) (d x y)))]
+      [(= 13 m) (error 'TODO)]
+      [else (error "invalid argument:" m)])))
 
 (define (j:monad+dyad u v)
   (make-j-procedure

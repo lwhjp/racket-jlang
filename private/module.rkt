@@ -25,7 +25,6 @@
           (require j/private/locale
                    j/private/read)
           (current-j-locale 'base)
-          (current-j-private-vars (make-hasheq))
           (current-read-interaction read-j-syntax))
         (with-input-from-string str execute/j))]))
 

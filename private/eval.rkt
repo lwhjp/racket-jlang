@@ -4,7 +4,9 @@
  j-namespace
  execute/j)
 
-(require "read.rkt")
+(require "executor.rkt"
+         "locale.rkt"
+         "read.rkt")
 
 (define-namespace-anchor here)
 
@@ -15,7 +17,10 @@
     (current-namespace)))
 
 (define (execute/j)
-  (parameterize ([current-namespace j-namespace])
-    (for/last ([stx (in-producer read-j-syntax)]
-               #:break (eof-object? stx))
-      (eval stx))))
+  (parameterize ([current-j-executor execute/j]
+                 [current-namespace j-namespace])
+    (with-new-j-private-vars
+      (λ ()
+        (for/last ([stx (in-producer read-j-syntax)]
+                   #:break (eof-object? stx))
+          (eval stx))))))

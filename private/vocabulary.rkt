@@ -135,7 +135,7 @@
   ["." TODO]
   [".." TODO]
   [".:" TODO]
-  [":" jc:monad+dyad] ; TODO: explicit definition
+  [":" (λ (x y) (if (and (procedure? x) (procedure? y)) (jc:monad+dyad x y) (jc:explicit x y)))]
   [":." TODO]
   ["::" (λ (u v) (jc:adverse u v #:pred exn:fail?))] ; TODO: only catch J errors
   [";." TODO]
