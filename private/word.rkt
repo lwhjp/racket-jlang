@@ -1,73 +1,63 @@
 #lang racket/base
 
 (provide
- adverb? make-primitive-adverb
- conjunction? make-primitive-conjunction
+ adverb? make-primitive-adverb make-compound-adverb
+ conjunction? make-primitive-conjunction make-compound-conjunction
  (struct-out name)
- verb? make-primitive-verb make-cap make-hook make-fork
  noun?
- make-train)
+ make-hook make-fork make-train
+ (all-from-out "verb.rkt"))
 
 (require math/array
-         "../customize.rkt"
-         "../obverse.rkt"
-         "../rank.rkt"
-         "proc.rkt")
-
-(define combine combine-monad+dyad)
+         "verb.rkt")
 
 (struct adverb (proc)
-  #:property prop:procedure (struct-field-index proc))
+  #:property prop:procedure
+  (λ (v u)
+    (make-compound-verb ((adverb-proc v) u))))
 
 (struct adverb:primitive adverb (name))
 
 (define make-primitive-adverb
   (case-lambda
-    [(name proc) (adverb:primitive (λ (u) (verb:compound (proc u))) name)]
-    [(name monad dyad) (make-primitive-adverb name (combine monad dyad))]))
+    [(name proc) (adverb:primitive proc name)]
+    [(name monad dyad) (adverb:primitive (λ (u) (combine-monad+dyad/verb (monad u) (dyad u))) name)]))
 
 (struct adverb:compound adverb ())
 
+(define make-compound-adverb adverb:compound)
+
 (struct conjunction (proc)
-  #:property prop:procedure (struct-field-index proc))
+  #:property prop:procedure
+  (λ (v x y)
+    (make-compound-verb ((conjunction-proc v) x y))))
 
 (struct conjunction:primitive conjunction (name))
 
+(struct conjunction:compound conjunction ())
+
 (define (make-primitive-conjunction name proc)
-  (conjunction:primitive
-   (λ (x y) (verb:compound (proc x y)))
-   name))
+  (conjunction:primitive proc name))
+
+(define make-compound-conjunction conjunction:compound)
 
 (struct name (locale id))
 
-(struct verb (proc)
-  #:property prop:procedure (struct-field-index proc)
-  #:property prop:rank (λ (v arity) (procedure-rank (verb-proc v) arity))
-  #:property prop:obverse (λ (v) (obverse (verb-proc v)))
-  #:property prop:customize (λ (v param) (verb:compound (customize (verb-proc v) param))))
-
-(struct verb:primitive verb (name))
-
-(define make-primitive-verb
-  (case-lambda
-    [(name proc) (verb:primitive proc name)]
-    [(name monad dyad) (verb:primitive (combine monad dyad) name)]))
-
-(struct verb:cap verb:primitive ())
-
-(define (make-cap name)
-  (verb:cap (case-lambda) name))
-
-(struct verb:compound verb ())
+(define (noun? v)
+  (or (array? v)
+      (box? v)
+      (char? v)
+      (number? v)
+      (symbol? v)))
 
 (define (make-hook g h)
-  (verb:compound
+  (make-compound-verb
    (case-lambda
      [(y) (g y (h y))]
      [(x y) (g x (h y))])))
 
 (define (make-fork f g h)
-  (verb:compound
+  (make-compound-verb
    (cond
      [(verb:cap? f) (compose1 g h)]
      [(verb? f) (case-lambda
@@ -77,16 +67,9 @@
                   [(y) (g f (h y))]
                   [(x y) (g f (h x y))])])))
 
-(define (noun? v)
-  (or (array? v)
-      (box? v)
-      (char? v)
-      (number? v)
-      (symbol? v)))
-
 (define (make-train g h)
   (cond
-    [(and (adverb? g) (adverb? h)) (adverb:compound (compose1 g h))]
+    [(and (adverb? g) (adverb? h)) (adverb:compound (compose1 (adverb-proc g) (adverb-proc h)))]
     [(and (conjunction? g) (noun? h)) (adverb:compound (λ (y) (g y h)))]
     [(and (conjunction? g) (verb? h)) (adverb:compound (λ (y) (g y h)))]
     [(and (noun? g) (conjunction? h)) (adverb:compound (λ (y) (h g y)))]

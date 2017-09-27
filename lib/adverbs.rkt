@@ -1,25 +1,25 @@
 #lang racket/base
 
+(provide (all-defined-out))
+
 (require "../rank.rkt"
-         "../private/proc.rkt")
+         "../private/word.rkt")
 
 ; TODO: check arity
+; TODO: maintain obverse if appropriate
 
 (define (reflex u)
-  (make-j-procedure
-   (lambda/rank (y) (u y y))))
+  (lambda/rank (y) (u y y)))
 
 (define (passive u)
-  (make-j-procedure
-   (lambda/rank (x y) (u y x))))
+  (lambda/rank (x y) (u y x)))
 
 (define (insert u)
   ; TODO: gerund
-  (make-j-procedure
-   (lambda/rank (y)
-     (for/fold ([a 0 #| XXX: identity |#])
-               ([t (in-items y)])
-       (u a t)))))
+  (lambda/rank (y)
+    (for/fold ([a 0 #| XXX: identity |#])
+              ([t (in-items y)])
+      (u a t))))
 
 ;table
 ;oblique
@@ -35,5 +35,3 @@
 ;memo
 ;taylor-coeff
 ;weighted-taylor
-
-(provide (all-defined-out))

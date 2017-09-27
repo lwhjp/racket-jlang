@@ -1,5 +1,11 @@
 #lang racket/base
 
+(provide (filtered-out
+          (λ (name)
+            (and (regexp-match? #rx"^j:." name)
+                 (substring name 2)))
+          (all-defined-out)))
+
 (require (for-syntax racket/base)
          math/array
          math/number-theory
@@ -9,13 +15,13 @@
          racket/vector
          "../customize.rkt"
          "../rank.rkt"
-         "../private/proc.rkt"
+         "../private/word.rkt"
          "parameters.rkt")
 
 (define (monad proc) (procedure-reduce-arity proc 1))
 (define (dyad proc) (procedure-reduce-arity proc 2))
 
-(define (self-inverse proc) (make-j-procedure proc #:obverse proc))
+(define (self-inverse proc) (make-verb proc #:obverse proc))
 
 (define-syntax-rule (lambda/atomic (arg ...) body ...)
   (atomic-procedure->ranked-procedure
@@ -97,7 +103,7 @@
 (define j:conjugate (self-inverse conjugate))
 
 (define j:plus
-  (make-j-procedure
+  (make-verb
    (dyad +)
    #:obverse (λ (x y) (- y x))))
 
@@ -291,9 +297,3 @@
 ;symbol
 ;unicode
 ;extended precision
-
-(provide (filtered-out
-          (λ (name)
-            (and (regexp-match? #rx"^j:." name)
-                 (substring name 2)))
-          (all-defined-out)))
