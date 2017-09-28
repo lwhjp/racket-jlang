@@ -24,7 +24,7 @@
             "'")])
     (if (eqv? 1 (string-length v))
         (string-ref v 0)
-        v)))
+        (string->list v))))
 
 (define parse
   (parser

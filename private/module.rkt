@@ -37,7 +37,8 @@
 (define-syntax (#%noun stx)
   (syntax-case stx ()
     [(_ v) #'v]
-    [(_ v0 v ...) #'(array #[v0 v ...])]))
+    [(_ v ...) #'(array #[v ...])]
+    [(_ . v) #'v]))
 
 (define-syntax (#%sentence stx)
   (syntax-case stx()
