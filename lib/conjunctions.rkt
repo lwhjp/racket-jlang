@@ -18,6 +18,7 @@
          "../obverse.rkt"
          "../rank.rkt"
          "../private/executor.rkt"
+         "../private/locale.rkt"
          "../private/word.rkt")
 
 ; TODO: maintain obverse if appropriate
@@ -63,7 +64,9 @@
       [else (error "invalid argument:" n)])))
   ; TODO: control statements
   (define (eval str)
-    (with-input-from-string str (current-j-executor)))
+    (with-new-j-private-vars
+      (λ ()
+        (with-input-from-string str (current-j-executor)))))
   (let ([m (normalize-noun m)])
     (cond
       [(= 0 m) noun-def]

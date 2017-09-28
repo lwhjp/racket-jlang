@@ -19,8 +19,6 @@
 (define (execute/j)
   (parameterize ([current-j-executor execute/j]
                  [current-namespace j-namespace])
-    (with-new-j-private-vars
-      (λ ()
-        (for/last ([stx (in-producer read-j-syntax)]
-                   #:break (eof-object? stx))
-          (eval stx))))))
+    (for/last ([stx (in-producer read-j-syntax)]
+               #:break (eof-object? stx))
+      (eval stx))))
