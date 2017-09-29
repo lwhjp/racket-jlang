@@ -32,12 +32,14 @@
   (collapse-frame/fill (apply array-map proc frames) fill))
 
 (define (collapse-frame/fill arr fill [cell-shape-hint #f])
+  ;; HACK: we should really ask the verbs what their return type is
+  (define fill-value (if (procedure? fill) (fill arr) fill))
   (define shape
     (or cell-shape-hint
         (array-all-fold (array-map value-shape arr)
                         cell-shape-broadcast
                         #[])))
-  (collapse-frame (array-map (fill-cell shape fill) arr) shape))
+  (collapse-frame (array-map (fill-cell shape fill-value) arr) shape))
 
 (define (collapse-frame arr cell-shape)
   (cond

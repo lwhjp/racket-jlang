@@ -11,10 +11,13 @@
 
 (require "../customize.rkt"
          "../obverse.rkt"
-         "../rank.rkt")
+         "../rank.rkt"
+         "type.rkt")
 
 (struct verb (proc obverse)
-  #:property prop:procedure (struct-field-index proc)
+  #:property prop:procedure
+  (λ (v . args)
+    (apply/rank (verb-proc v) args #:fill fill-for-frame))
   #:property prop:rank (λ (v arity) (procedure-rank (verb-proc v) arity))
   #:property prop:obverse
   (λ (v)
