@@ -1,6 +1,7 @@
 #lang racket/base
 
-(provide fill-for-frame)
+(provide fill-for-frame
+         guess-fill)
 
 (require math/array
          "vocab/nouns.rkt")

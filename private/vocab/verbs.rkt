@@ -12,11 +12,13 @@
          (only-in racket/list make-list)
          racket/math
          racket/provide
+         racket/sequence
          racket/vector
          "../../customize.rkt"
          "../../rank.rkt"
-         "../../private/word.rkt"
-         "../parameters.rkt")
+         "../type.rkt"
+         "../parameters.rkt"
+         "../word.rkt")
 
 (define (monad proc) (procedure-reduce-arity proc 1))
 (define (dyad proc) (procedure-reduce-arity proc 2))
@@ -40,6 +42,7 @@
 
 (define (*zero? v) (and (number? v) (zero? v)))
 (define (*positive? v) (and (real? v) (positive? v)))
+(define (*nonnegative? v) (and (real? v) (not (negative? v))))
 
 (define (compare/numeric numeric-cmp else-cmp x y)
   (cond
@@ -137,7 +140,14 @@
 
 (define/atomic jv:halve (λ (y) (/ y 2)))
 
-; match
+(define-customizable/cond (jv:match t)
+  current-default-tolerance
+  [(*nonnegative? t) (let ([cmp (customize jv:equal t)])
+                       (lambda/rank (x y)
+                         (let ([x (->array x)]
+                               [y (->array y)])
+                           (and (equal? (array-shape x) (value-shape y))
+                                (array-andmap cmp x y)))))])
 
 (define/atomic jv:reciprocal (λ (y) (if (zero? y) +inf.0 (/ y))))
 
@@ -161,8 +171,29 @@
 (define/rank (jv:shape-of y) (value-shape y))
 
 (define/rank (jv:shape [x 1] y)
-  ; FIXME: this is wrong
-  (array-reshape (->array y) (array->vector (->array x))))
+  ; TODO: fit
+  (define x-vec (array->vector (->array x)))
+  (cond
+    [(zero? (vector-length x-vec)) (if (atom? y) y (array-axis-ref (->array y) 0 0))]
+    [(atom? y) (make-array x-vec y)]
+    [else
+     (define x-len (vector-length x-vec))
+     (define y-arr (->array y))
+     (define y-shape (array-shape y))
+     (define item-count (vector-ref y-shape 0))
+     (define item-shape (vector-drop y-shape 1))
+     (array-transform
+      y-arr
+      (vector-append x-vec item-shape)
+      (λ (js)
+        (define item-idx
+          (for/fold ([i 0])
+                    ([j (in-vector js)]
+                     [d (in-vector x-vec)])
+            (+ (* i d) j)))
+        (define y-part (vector-drop js (sub1 x-len)))
+        (vector-set! y-part 0 (remainder item-idx item-count))
+        y-part))]))
 
 ; Sparse: not implemented
 
@@ -197,7 +228,44 @@
 
 (define/rank (jv:ravel y) (array-flatten (->array y)))
 
-; append
+(define/rank (jv:append x y)
+  ; TODO: fit
+  (let*-values
+      ([(x y) (cond
+                [(atom? x) (values (jv:shape (item-shape y) x) y)]
+                [(atom? y) (values x (jv:shape (item-shape x) y))]
+                [else (values x y)])]
+       [(x y) (values (for/fold ([x (->array x)])
+                                ([i (in-range (value-rank x) (value-rank y))])
+                        (array-axis-insert x 0))
+                      (for/fold ([y (->array y)])
+                                ([i (in-range (value-rank y) (value-rank x))])
+                        (array-axis-insert y 0)))])
+    (cond
+      [(zero? (array-dims x)) (array #[(array-ref x #[]) (array-ref y #[])])]
+      [else
+       (define fill (or (guess-fill x) (guess-fill y) 0)) ; TODO: types
+       (define x-shape (array-shape x))
+       (define y-shape (array-shape y))
+       (define x-tally (vector-ref x-shape 0))
+       (define y-tally (vector-ref y-shape 0))
+       (define out-shape (vector-map max x-shape y-shape))
+       (vector-set! out-shape 0 (+ x-tally y-tally))
+       (build-array
+        out-shape
+        (λ (js)
+          (define item-idx (vector-ref js 0))
+          (define-values (src-arr src-shape src-item-idx)
+            (if (< item-idx x-tally)
+                (values x x-shape item-idx)
+                (values y y-shape (- item-idx x-tally))))
+          (define src-js (vector-copy js))
+          (vector-set! src-js 0 src-item-idx)
+          (if (for/and ([j (in-vector src-js)]
+                        [d (in-vector src-shape)])
+                (< j d))
+              (unsafe-array-ref src-arr src-js)
+              fill)))])))
 
 ; ravel items
 
@@ -215,10 +283,46 @@
 
 (define/rank (jv:tally y) (value-tally y))
 
-; copy
+(define/rank (jv:copy [x 1] y)
+  (cond
+    [(eqv? (value-tally x) (value-tally y))
+     (define y-arr
+       (if (array? y) y (array #[y])))
+     (define indexes
+       (list->vector
+        (reverse
+         (for/fold ([is '()])
+                   ([k (in-array (->array x))]
+                    [i (in-naturals)])
+           (append (make-list (imag-part k) #f)
+                   (make-list (real-part k) i)
+                   is)))))
+     (define fill (or (guess-fill y) 0)) ; TODO: types
+     (build-array
+      (vector-append (vector (vector-length indexes)) (item-shape y-arr))
+      (λ (js)
+        (define idx (vector-ref indexes (vector-ref js 0)))
+        (cond
+          [(not idx) fill]
+          [else
+           (define y-js (vector-copy js))
+           (vector-set! y-js 0 idx)
+           (array-ref y-arr y-js)])))]
+    [(atom? x) (jv:copy (jv:shape (value-shape y) x) y)]
+    [(atom? y) (jv:copy x (jv:shape (value-shape x) y))]
+    [else (error 'copy "length error: ~a" x)]))
 
-; base two
-;base
+(define/rank (jv:base [x 1] [y 1])
+  ; TODO: inverse
+  (define x-arr (if (array? x) x (->array (jv:shape (value-shape y) x))))
+  (define y-arr (if (array? y) y (->array (jv:shape (value-shape x) y))))
+  (unless (equal? (array-shape x-arr) (array-shape y-arr))
+    (error 'base "length error: ~a" x))
+  (for/fold ([a 0])
+            ([x (in-array x-arr)]
+             [y (in-array y-arr)])
+    (+ (* a x) y)))
+
 ;antibase two
 ;antibase
 ;factorial
@@ -235,15 +339,66 @@
 (define/rank (jv:right x y) y)
 
 ;catalogue
-;from
-;head
-;take
-;tail
+
+(define/rank (jv:from [x 0] y)
+  ; TODO: non-integer x
+  (item-ref y x))
+
+(define/rank (jv:head y) (jv:from 0 (jv:take 1 y)))
+
+(define/rank (jv:take [x 1] y)
+  ; TODO: fit
+  (define x-vec (array->vector (->array x)))
+  (define y-arr
+    (if (array? y)
+        y
+        (jv:shape (make-vector (vector-length x-vec) 1) y)))
+  (define y-shape (array-shape y-arr))
+  (unless (<= (vector-length x-vec) (vector-length y-shape))
+    (error 'take "index error: ~a" x))
+  ;; Can't use array-slice-ref due to overtaking
+  (define out-shape
+    (for/vector ([k (in-sequences (in-vector x-vec) (in-cycle '(+inf.0)))]
+                 [d (in-vector y-shape)])
+      (if (infinite? k) d (abs k))))
+  (define index-offsets
+    (for/vector ([k (in-sequences (in-vector x-vec) (in-cycle '(+inf.0)))]
+                 [d (in-vector y-shape)])
+      (if (negative? k) (+ k d) 0)))
+  (define fill (or (guess-fill y) 0)) ; TODO: types
+  (build-array
+   out-shape
+   (λ (js)
+     (define offset-js (vector-map + js index-offsets))
+     (if (for/and ([j (in-vector offset-js)]
+                   [d (in-vector y-shape)])
+           (<= 0 j (sub1 d)))
+         (array-ref y-arr offset-js)
+         fill))))
+
+(define/rank (jv:tail y) (jv:from 0 (jv:take -1 y)))
+
 ;map
 ;fetch
-;behead
-;drop
-;curtail
+
+(define/rank (jv:behead y) (jv:drop 1 y))
+
+(define/rank (jv:drop [x 1] y)
+  (define x-vec (array->vector (->array x)))
+  (define y-arr (if (atom? y) (array #[y]) y))
+  (define y-shape (array-shape y-arr))
+  (unless (<= (vector-length x-vec) (vector-length y-shape))
+    (error 'drop "index error: ~a" x))
+  (array-slice-ref
+   y-arr
+   (for/list ([k (in-sequences (in-vector x-vec) (in-cycle '(0)))]
+              [d (in-vector y-shape)])
+     (if (negative? k)
+         (:: (max (+ d k) 0))
+         (:: (min d k) d)))))
+
+(define/rank (jv:curtail y) (jv:drop -1 y))
+
 ;do
 ;numbers
 ;default-format
@@ -265,7 +420,21 @@
   (array-slice-ref (index-array (vector-map abs shape))
                    (map (λ (d) (:: #f #f (sgn d))) (vector->list shape))))
 
-;index-of
+(define/rank (jv:index-of x y)
+  ; TODO: fit
+  (define rix (max 0 (sub1 (value-rank x))))
+  (define tx (value-tally x))
+  ; FIXME: this is a little clumsy...
+  ((make-ranked-procedure
+    (λ (c)
+      (or (for/first ([i (in-naturals)]
+                      [xc (in-items x)]
+                      #:unless (zero? (jv:match c xc)))
+            i)
+          tx))
+    `((,rix)))
+   y))
+
 ;indices
 ;interval-index
 

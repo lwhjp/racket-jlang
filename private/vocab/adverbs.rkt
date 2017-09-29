@@ -2,7 +2,9 @@
 
 (provide (all-defined-out))
 
-(require "../../rank.rkt")
+(require racket/sequence
+         "../../rank.rkt"
+         "verbs.rkt")
 
 ; TODO: check arity
 ; TODO: maintain obverse if appropriate
@@ -24,8 +26,20 @@
 
 ;oblique
 ;key
-;prefix
-;infix
+
+(define (ja:prefix+infix u)
+  ; TODO: gerund
+  (case-lambda/rank
+   [(y) (apply/rank
+         (λ (k) (u (jv:take k y)))
+         (list (build-list (value-tally y) add1)))]
+   [([x 0] y) (define yt (value-tally y))
+              (apply/rank
+               (λ (k) (u (jv:from (build-list (min (abs x) (- yt k)) (λ (i) (+ i k))) y)))
+               (list (sequence->list (if (negative? x)
+                                         (in-range 0 yt (- x))
+                                         (in-range 0 (add1 (- yt x)))))))]))
+
 ;suffix
 ;outfix
 ;item amend

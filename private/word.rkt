@@ -9,6 +9,7 @@
  (all-from-out "verb.rkt"))
 
 (require math/array
+         "../rank.rkt"
          "verb.rkt")
 
 (struct adverb (proc)
@@ -50,18 +51,18 @@
 
 (define (make-hook g h)
   (make-compound-verb
-   (case-lambda
+   (case-lambda/rank
      [(y) (g y (h y))]
      [(x y) (g x (h y))])))
 
 (define (make-fork f g h)
   (make-compound-verb
    (cond
-     [(verb:cap? f) (compose1 g h)]
-     [(verb? f) (case-lambda
+     [(verb:cap? f) (make-ranked-procedure (compose1 g h) (λ (arity) #f))]
+     [(verb? f) (case-lambda/rank
                   [(y) (g (f y) (h y))]
                   [(x y) (g (f x y) (h x y))])]
-     [(noun? f) (case-lambda
+     [(noun? f) (case-lambda/rank
                   [(y) (g f (h y))]
                   [(x y) (g f (h x y))])])))
 

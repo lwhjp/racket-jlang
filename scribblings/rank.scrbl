@@ -84,6 +84,17 @@
             (value-tally (vector))]
 }
 
+@defproc[(item-ref [v any/c] [pos exact-integer?]) any/c]{
+  Returns the item of @racket[v] at position @racket[pos], where the first
+  item is position @racket[0], and negative positions count backwards from
+  the end.
+}
+
+@defproc[(item-shape [v any/c]) (vectorof exact-nonnegative-integer?)]{
+  Returns the shape of an item of @racket[v].
+  Equivalent to @racket[(if (atom? v) #[] (vector-drop (value-shape v) 1))].
+}
+
 @defproc[(in-items [v any/c]) sequence?]{
   Returns a sequence consisting of the items of @racket[v].
 
