@@ -1,6 +1,6 @@
 #lang scribble/manual
 
-@(require (for-label j/lib))
+@(require (for-label))
 
 @title{J library}
 
