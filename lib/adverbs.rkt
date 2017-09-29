@@ -1,37 +1,11 @@
 #lang racket/base
 
-(provide (all-defined-out))
+(provide (filtered-out
+          (λ (name)
+            (and (regexp-match? #rx"^ja:." name)
+                 (substring name 3)))
+          (all-from-out "../private/vocab/adverbs.rkt")))
 
-(require "../rank.rkt"
-         "../private/word.rkt")
-
-; TODO: check arity
-; TODO: maintain obverse if appropriate
-
-(define (reflex u)
-  (lambda/rank (y) (u y y)))
-
-(define (passive u)
-  (lambda/rank (x y) (u y x)))
-
-(define (insert u)
-  ; TODO: gerund
-  (lambda/rank (y)
-    (for/fold ([a 0 #| XXX: identity |#])
-              ([t (in-items y)])
-      (u a t))))
-
-;table
-;oblique
-;key
-;prefix
-;infix
-;suffix
-;outfix
-;item amend
-;amend
-;boolean
-;fix
-;memo
-;taylor-coeff
-;weighted-taylor
+(require (for-syntax racket/base)
+         racket/provide
+         "../private/vocab/adverbs.rkt")

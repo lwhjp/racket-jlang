@@ -1,15 +1,21 @@
 #lang racket/base
 
+(provide (filtered-out
+          (λ (name)
+            (and (regexp-match? #rx"^j:." name)
+                 (substring name 2)))
+          (all-defined-out)))
+
 (require (for-syntax racket/base
                      racket/syntax
                      "../number.rkt")
          racket/provide
-         (prefix-in ja: "../lib/adverbs.rkt")
-         (prefix-in jc: "../lib/conjunctions.rkt")
-         (prefix-in jn: "../lib/nouns.rkt")
-         (prefix-in jv: "../lib/verbs.rkt")
          "coupla.rkt"
-         "word.rkt")
+         "word.rkt"
+         "vocab/adverbs.rkt"
+         "vocab/conjunctions.rkt"
+         "vocab/nouns.rkt"
+         "vocab/verbs.rkt")
 
 (define-syntax (define-word stx)
   (syntax-case stx ()
@@ -117,13 +123,13 @@
   (begin (define-word id-str (make-primitive-adverb (string->symbol id-str) proc ...)) ...))
 
 (define-adverbs
-  ["~" ja:reflex ja:passive]
-  ["/" ja:insert (λ args TODO)]
-  ["/." TODO TODO]
-  ["\\" TODO TODO]
-  ["\\." TODO TODO]
-  ["}" TODO TODO]
-  ["b." TODO TODO]
+  ["~" ja:reflex+passive]
+  ["/" ja:insert+table]
+  ["/." TODO]
+  ["\\" TODO]
+  ["\\." TODO]
+  ["}" TODO]
+  ["b." TODO]
   ["f." TODO]
   ["M." TODO]
   ["t." TODO]
@@ -137,7 +143,7 @@
   ["." TODO]
   [".." TODO]
   [".:" TODO]
-  [":" (λ (x y) (if (and (procedure? x) (procedure? y)) (jc:monad+dyad x y) (jc:explicit x y)))]
+  [":" (λ (x y) (if (and (procedure? x) (procedure? y)) (jc:monad-dyad x y) (jc:explicit x y)))]
   [":." jc:obverse]
   ["::" (λ (u v) (jc:adverse u v #:pred exn:fail?))] ; TODO: only catch J errors
   [";." TODO]
@@ -165,9 +171,3 @@
 (define-word "=:" coupla/global)
 (define-word "a." jn:alphabet)
 (define-word "a:" jn:ace)
-
-(provide (filtered-out
-          (λ (name)
-            (and (regexp-match? #rx"^j:." name)
-                 (substring name 2)))
-          (all-defined-out)))

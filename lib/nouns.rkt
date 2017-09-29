@@ -1,10 +1,11 @@
 #lang racket/base
 
-(require math/array
-         "../rank.rkt")
+(provide (filtered-out
+          (λ (name)
+            (and (regexp-match? #rx"^jn:." name)
+                 (substring name 3)))
+          (all-from-out "../private/vocab/nouns.rkt")))
 
-(define ace (array #[]))
-
-(define alphabet (list->array (build-list 256 integer->char)))
-
-(provide (all-defined-out))
+(require (for-syntax racket/base)
+         racket/provide
+         "../private/vocab/nouns.rkt")

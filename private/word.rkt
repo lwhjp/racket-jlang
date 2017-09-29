@@ -18,10 +18,8 @@
 
 (struct adverb:primitive adverb (name))
 
-(define make-primitive-adverb
-  (case-lambda
-    [(name proc) (adverb:primitive proc name)]
-    [(name monad dyad) (adverb:primitive (λ (u) (combine-monad+dyad/verb (monad u) (dyad u))) name)]))
+(define (make-primitive-adverb name proc)
+  (adverb:primitive proc name))
 
 (struct adverb:compound adverb ())
 
