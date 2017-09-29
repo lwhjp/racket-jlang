@@ -158,7 +158,7 @@
 
 (define/atomic j:logarithm (λ (x y) (/ (log y) (log x))))
 
-(define/rank (j:shape-of y) (noun-shape y))
+(define/rank (j:shape-of y) (value-shape y))
 
 (define/rank (j:shape [x 1] y)
   ; FIXME: this is wrong
@@ -182,7 +182,7 @@
 ; residue (non-integer)
 
 (define/rank (j:reverse y) ; TODO: fit (right-shift)
-  (if (zero? (noun-rank y))
+  (if (zero? (value-rank y))
       y
       (array-slice-ref (->array y) (list (:: #f #f -1) ::...))))
 
@@ -213,7 +213,7 @@
 ; words
 ; sequential machine
 
-(define/rank (j:tally y) (noun-tally y))
+(define/rank (j:tally y) (value-tally y))
 
 ; copy
 

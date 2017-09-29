@@ -38,7 +38,7 @@
 
 (define (j:explicit m n)
   (define-values (noun-def str)
-    (let ([n (normalize-noun n)])
+    (let ([n (normalize-value n)])
       (cond
         [(zero? n)
          (define str
@@ -50,7 +50,7 @@
          (values n (list->string (list n)))]
         [(and (eqv? 1 (array-dims n)) (array-andmap char? n))
          (values n (list->string (array->list n)))]
-        [(and (eqv? 1 (noun-rank n)) (array-andmap box? n))
+        [(and (eqv? 1 (value-rank n)) (array-andmap box? n))
          (define lines
            (map (λ (e)
                   (define str (unbox e))
@@ -59,7 +59,7 @@
                   (list->string (array->list str)))
                 (array->list n)))
          (values n (string-join lines "\n"))]
-      [(and (eqv? 2 (noun-rank n)) (array-andmap char? n))
+      [(and (eqv? 2 (value-rank n)) (array-andmap char? n))
        (values n (map list->string (array->list-array n)))]
       [else (error "invalid argument:" n)])))
   ; TODO: control statements
@@ -67,7 +67,7 @@
     (with-new-j-private-vars
       (λ ()
         (with-input-from-string str (current-j-executor)))))
-  (let ([m (normalize-noun m)])
+  (let ([m (normalize-value m)])
     (cond
       [(= 0 m) noun-def]
       [(= 1 m) (make-compound-adverb (eval str))]
@@ -114,8 +114,8 @@
       [(eqv? +inf.0) #f]
       [(eqv? -inf.0) 0]
       [else (error "invalid rank:" v)]))
-  (unless (and (<= (noun-rank n) 1)
-               (<= 1 (noun-tally n) 3))
+  (unless (and (<= (value-rank n) 1)
+               (<= 1 (value-tally n) 3))
     (error "invalid rank specifier:" n))
   (define rank
     (match (map ->rank (sequence->list (in-items n)))

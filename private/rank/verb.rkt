@@ -33,7 +33,7 @@
   [apply/rank (->* (procedure?)
                    (#:fill any/c)
                    #:rest (*list/c any/c list?)
-                   normalized-noun?)]
+                   normalized-value?)]
   [make-ranked-procedure (-> rankable-procedure/c
                              procedure-rank-spec/c
                              ranked-procedure?)]
@@ -69,13 +69,13 @@
     (if (ranked-procedure-wrapper? proc)
         (ranked-procedure-wrapper-proc proc)
         proc))
-  (define vs (map normalize-noun (apply list* args)))
+  (define vs (map normalize-value (apply list* args)))
   (define arity (length vs))
   (unless (procedure-arity-includes? real-proc arity)
     (apply raise-arity-error 'apply/rank (procedure-arity real-proc) vs))
   (parameterize ([current-fill fill])
     (if (null? vs)
-        (normalize-noun (real-proc))
+        (normalize-value (real-proc))
         (apply map/frame/fill real-proc (procedure-rank proc arity) fill vs))))
 
 (define (make-ranked-procedure proc rank-spec)
@@ -102,11 +102,11 @@
      "arity accepted by procedure"
      arity))
   (if (has-rank? proc)
-      (let ([rank ((get-rank proc) proc arity)])
-        (unless (eqv? arity (length rank))
+      (let ([proc-rank ((get-rank proc) proc arity)])
+        (unless (eqv? arity (length proc-rank))
           (error (format "expected rank of length ~a;\n  given: ~a\n  in: ~a\n"
-                         arity (length rank) proc)))
-        rank)
+                         arity (length proc-rank) proc)))
+        proc-rank)
       (make-list arity 0)))
 
 (begin-for-syntax

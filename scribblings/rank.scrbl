@@ -14,23 +14,23 @@
   Support for J-style ranked apply.
 }
 
-@section{Nouns}
+@section{Ranked Values}
 
 @defproc[(atom? [v any/c]) boolean?]{
-  Equivalent to @racket[(zero? (noun-rank v))].
+  Equivalent to @racket[(zero? (value-rank v))].
 }
 
-@defproc[(normalized-noun? [v any/c]) boolean?]{
-  A normalized noun has one of the following forms:
+@defproc[(normalized-value? [v any/c]) boolean?]{
+  A normalized value has one of the following forms:
   @itemize[
     @item{an @racket[array?] with nonzero dimension;}
-    @item{an @racket[array?] with zero dimension whose element is not a @racket[normalized-noun?];}
+    @item{an @racket[array?] with zero dimension whose element is not a @racket[normalized-value?];}
     @item{an exact nonnegative integer; or}
     @item{anything which is not an @racket[array?] or a @racket[sequence?].}
   ]
 }
 
-@defproc[(normalize-noun [v any/c]) normalized-noun?]{
+@defproc[(normalize-value [v any/c]) normalized-value?]{
   Produces a normalized form of @racket[v].
 }
 
@@ -52,36 +52,36 @@
   Returns a one-dimensional array containing the elements of @racket[s].
 }
 
-@defproc[(noun-rank [v any/c]) exact-nonnegative-integer?]{
+@defproc[(value-rank [v any/c]) exact-nonnegative-integer?]{
   Returns the rank of @racket[v].
 
   @examples[#:eval rank-eval
-            (noun-rank 3)
-            (noun-rank '(3))
-            (noun-rank (index-array #[2 3 4]))
-            (noun-rank (vector))]
+            (value-rank 3)
+            (value-rank '(3))
+            (value-rank (index-array #[2 3 4]))
+            (value-rank (vector))]
 }
 
-@defproc[(noun-shape [v any/c]) (vectorof exact-nonnegative-integer?)]{
+@defproc[(value-shape [v any/c]) (vectorof exact-nonnegative-integer?)]{
   Returns the shape of @racket[v].
 
   Examples:
   @examples[#:eval rank-eval
-            (noun-shape 3)
-            (noun-shape '(3))
-            (noun-shape (index-array #[2 3 4]))
-            (noun-shape (vector))]
+            (value-shape 3)
+            (value-shape '(3))
+            (value-shape (index-array #[2 3 4]))
+            (value-shape (vector))]
 }
 
-@defproc[(noun-tally [v any/c]) exact-nonnegative-integer?]{
+@defproc[(value-tally [v any/c]) exact-nonnegative-integer?]{
   Returns the number of items in @racket[v].
 
   Examples:
   @examples[#:eval rank-eval
-            (noun-tally 3)
-            (noun-tally '(3))
-            (noun-tally (index-array #[2 3 4]))
-            (noun-tally (vector))]
+            (value-tally 3)
+            (value-tally '(3))
+            (value-tally (index-array #[2 3 4]))
+            (value-tally (vector))]
 }
 
 @defproc[(in-items [v any/c]) sequence?]{
@@ -94,7 +94,7 @@
             (sequence->list (in-items (vector)))]
 }
 
-@section{Verbs}
+@section{Ranked Procedures}
 
 A ranked procedure implicitly iterates over its arguments according to its rank.
 
@@ -130,7 +130,7 @@ A ranked procedure implicitly iterates over its arguments according to its rank.
                      [v any/c] ...
                      [lst list?]
                      [#:fill fill any/c (void)])
-         normalized-noun?]{
+         normalized-value?]{
   Similar to the ordinary Racket @racket[apply], except that non-ranked procedures
   are assumed to have rank @racket[0] for each argument.
 

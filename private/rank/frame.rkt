@@ -7,16 +7,16 @@
          racket/vector
          "noun.rkt")
 
-(define (map/frame/fill proc ranks fill . vs)
+(define (map/frame/fill proc proc-rank fill . vs)
   ; It is assumed that all the vs are normalized
-  (define arg-lengths (map noun-rank vs))
-  (define frame-lengths (map frame-length arg-lengths ranks))
+  (define arg-ranks (map value-rank vs))
+  (define frame-lengths (map frame-length arg-ranks proc-rank))
   (if (andmap zero? frame-lengths)
       (apply proc vs)
       (apply map/frame/fill/broadcast proc frame-lengths fill vs)))
 
 (define (map/frame/fill/broadcast proc frame-lengths fill . vs)
-  (define frame-shapes (map (λ (v l) (vector-take (noun-shape v) l)) vs frame-lengths))
+  (define frame-shapes (map (λ (v l) (vector-take (value-shape v) l)) vs frame-lengths))
   (define max-shape
     (for/fold ([prefix #[]])
               ([shape (in-list (sort frame-shapes < #:key vector-length))])
@@ -34,14 +34,14 @@
 (define (collapse-frame/fill arr fill [cell-shape-hint #f])
   (define shape
     (or cell-shape-hint
-        (array-all-fold (array-map noun-shape arr)
+        (array-all-fold (array-map value-shape arr)
                         cell-shape-broadcast
                         #[])))
   (collapse-frame (array-map (fill-cell shape fill) arr) shape))
 
 (define (collapse-frame arr cell-shape)
   (cond
-    [(zero? (vector-length cell-shape)) (normalize-noun arr)]
+    [(zero? (vector-length cell-shape)) (normalize-value arr)]
     [else
      (define frame-length (array-dims arr))
      (build-array
@@ -78,16 +78,16 @@
     [else (vector-map max (vector-append (make-vector (- d1 d2) 1) s2) s1)]))
 
 (define ((fill-cell shape fill) c)
-  (define rank (vector-length shape))
-  (define cell-shape (noun-shape c))
+  (define out-rank (vector-length shape))
+  (define cell-shape (value-shape c))
   (define cell-rank (vector-length cell-shape))
   (cond
-    [(equal? shape cell-shape) (normalize-noun c)]
-    [(zero? rank) (array-ref (->array c) (make-vector cell-rank 0))]
+    [(equal? shape cell-shape) (normalize-value c)]
+    [(zero? out-rank) (array-ref (->array c) (make-vector cell-rank 0))]
     [else
      (define projected-shape
-       (vector-append (make-vector (max (- rank cell-rank) 0) 1)
-                      (vector-take-right cell-shape (min cell-rank rank))))
+       (vector-append (make-vector (max (- out-rank cell-rank) 0) 1)
+                      (vector-take-right cell-shape (min cell-rank out-rank))))
      (build-array shape
                   (let ([c (->array c)])
                     (λ (js)
