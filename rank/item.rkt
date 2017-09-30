@@ -67,7 +67,7 @@
   (define index-offsets
     (for/vector ([k (in-sequences (in-vector x-vec) (in-cycle '(+inf.0)))]
                  [d (in-vector y-shape)])
-      (if (negative? k) (+ k d) 0)))
+      (if (and (not (infinite? k)) (negative? k)) (+ k d) 0)))
   (define fill (current-fill))
   (build-array
    out-shape
@@ -91,9 +91,11 @@
    y-arr
    (for/list ([k (in-sequences (in-vector x-vec) (in-cycle '(0)))]
               [d (in-vector y-shape)])
-     (if (negative? k)
-         (:: (max (+ d k) 0))
-         (:: (min d k) d)))))
+     (cond
+       [(infinite? k) (:: 0)]
+       [(negative? k) (:: (max (+ d k) 0))]
+       [else (:: (min d k) d)]))))
+
 
 (define/rank (reshape-items v [new-shape 1])
   (define x-vec (array->vector (->array new-shape)))
