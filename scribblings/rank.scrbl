@@ -3,6 +3,7 @@
 @(require scribble/example
           (for-label math/array
                      racket/base
+                     racket/vector
                      j/rank))
 
 @title{Ranked Apply}
@@ -72,6 +73,8 @@
             (shape (index-array #[2 3 4]))
             (shape (vector))]
 }
+
+@section{Items}
 
 @defproc[(tally [v any/c]) exact-nonnegative-integer?]{
   Returns the number of items in @racket[v].

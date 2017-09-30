@@ -26,7 +26,7 @@
 (define-syntax-rule (define-verbs [id-str proc ...] ...)
   (begin (define-word id-str (make-primitive-verb (string->symbol id-str) proc ...)) ...))
 
-(require (only-in "rank/verb.rkt" make-ranked-procedure)
+(require (only-in "../rank.rkt" make-ranked-procedure)
          (only-in racket/list make-list))
 (define TODO (make-ranked-procedure (λ args (error "not implemented")) (λ (arity) (make-list arity #f))))
 
