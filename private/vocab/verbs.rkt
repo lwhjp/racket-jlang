@@ -146,7 +146,7 @@
                        (lambda/rank (x y)
                          (let ([x (->array x)]
                                [y (->array y)])
-                           (and (equal? (array-shape x) (value-shape y))
+                           (and (equal? (array-shape x) (shape y))
                                 (array-andmap cmp x y)))))])
 
 (define/atomic jv:reciprocal (λ (y) (if (zero? y) +inf.0 (/ y))))
@@ -168,7 +168,7 @@
 
 (define/atomic jv:logarithm (λ (x y) (/ (log y) (log x))))
 
-(define/rank (jv:shape-of y) (value-shape y))
+(define/rank (jv:shape-of y) (shape y))
 
 (define/rank (jv:shape [x 1] y)
   ; TODO: fit
@@ -213,7 +213,7 @@
 ; residue (non-integer)
 
 (define/rank (jv:reverse y) ; TODO: fit (right-shift)
-  (if (zero? (value-rank y))
+  (if (zero? (rank y))
       y
       (array-slice-ref (->array y) (list (:: #f #f -1) ::...))))
 
@@ -236,10 +236,10 @@
                 [(atom? y) (values x (jv:shape (item-shape x) y))]
                 [else (values x y)])]
        [(x y) (values (for/fold ([x (->array x)])
-                                ([i (in-range (value-rank x) (value-rank y))])
+                                ([i (in-range (rank x) (rank y))])
                         (array-axis-insert x 0))
                       (for/fold ([y (->array y)])
-                                ([i (in-range (value-rank y) (value-rank x))])
+                                ([i (in-range (rank y) (rank x))])
                         (array-axis-insert y 0)))])
     (cond
       [(zero? (array-dims x)) (array #[(array-ref x #[]) (array-ref y #[])])]
@@ -281,11 +281,11 @@
 ; words
 ; sequential machine
 
-(define/rank (jv:tally y) (value-tally y))
+(define/rank (jv:tally y) (tally y))
 
 (define/rank (jv:copy [x 1] y)
   (cond
-    [(eqv? (value-tally x) (value-tally y))
+    [(eqv? (tally x) (tally y))
      (define y-arr
        (if (array? y) y (array #[y])))
      (define indexes
@@ -308,14 +308,14 @@
            (define y-js (vector-copy js))
            (vector-set! y-js 0 idx)
            (array-ref y-arr y-js)])))]
-    [(atom? x) (jv:copy (jv:shape (value-shape y) x) y)]
-    [(atom? y) (jv:copy x (jv:shape (value-shape x) y))]
+    [(atom? x) (jv:copy (jv:shape (shape y) x) y)]
+    [(atom? y) (jv:copy x (jv:shape (shape x) y))]
     [else (error 'copy "length error: ~a" x)]))
 
 (define/rank (jv:base [x 1] [y 1])
   ; TODO: inverse
-  (define x-arr (if (array? x) x (->array (jv:shape (value-shape y) x))))
-  (define y-arr (if (array? y) y (->array (jv:shape (value-shape x) y))))
+  (define x-arr (if (array? x) x (->array (jv:shape (shape y) x))))
+  (define y-arr (if (array? y) y (->array (jv:shape (shape x) y))))
   (unless (equal? (array-shape x-arr) (array-shape y-arr))
     (error 'base "length error: ~a" x))
   (for/fold ([a 0])
@@ -422,8 +422,8 @@
 
 (define/rank (jv:index-of x y)
   ; TODO: fit
-  (define rix (max 0 (sub1 (value-rank x))))
-  (define tx (value-tally x))
+  (define rix (max 0 (sub1 (rank x))))
+  (define tx (tally x))
   ; FIXME: this is a little clumsy...
   ((make-ranked-procedure
     (λ (c)

@@ -9,14 +9,14 @@
 
 (define (map/frame/fill proc proc-rank fill . vs)
   ; It is assumed that all the vs are normalized
-  (define arg-ranks (map value-rank vs))
+  (define arg-ranks (map rank vs))
   (define frame-lengths (map frame-length arg-ranks proc-rank))
   (if (andmap zero? frame-lengths)
       (apply proc vs)
       (apply map/frame/fill/broadcast proc frame-lengths fill vs)))
 
 (define (map/frame/fill/broadcast proc frame-lengths fill . vs)
-  (define frame-shapes (map (λ (v l) (vector-take (value-shape v) l)) vs frame-lengths))
+  (define frame-shapes (map (λ (v l) (vector-take (shape v) l)) vs frame-lengths))
   (define max-shape
     (for/fold ([prefix #[]])
               ([shape (in-list (sort frame-shapes < #:key vector-length))])
@@ -34,12 +34,12 @@
 (define (collapse-frame/fill arr fill [cell-shape-hint #f])
   ;; HACK: we should really ask the verbs what their return type is
   (define fill-value (if (procedure? fill) (fill arr) fill))
-  (define shape
+  (define cell-shape
     (or cell-shape-hint
-        (array-all-fold (array-map value-shape arr)
+        (array-all-fold (array-map shape arr)
                         cell-shape-broadcast
                         #[])))
-  (collapse-frame (array-map (fill-cell shape fill-value) arr) shape))
+  (collapse-frame (array-map (fill-cell cell-shape fill-value) arr) cell-shape))
 
 (define (collapse-frame arr cell-shape)
   (cond
@@ -79,18 +79,18 @@
     [(< d1 d2) (vector-map max (vector-append (make-vector (- d2 d1) 1) s1) s2)]
     [else (vector-map max (vector-append (make-vector (- d1 d2) 1) s2) s1)]))
 
-(define ((fill-cell shape fill) c)
-  (define out-rank (vector-length shape))
-  (define cell-shape (value-shape c))
-  (define cell-rank (vector-length cell-shape))
+(define ((fill-cell cell-shape fill) c)
+  (define out-rank (vector-length cell-shape))
+  (define in-shape (shape c))
+  (define cell-rank (vector-length in-shape))
   (cond
-    [(equal? shape cell-shape) (normalize-value c)]
+    [(equal? cell-shape in-shape) (normalize-value c)]
     [(zero? out-rank) (array-ref (->array c) (make-vector cell-rank 0))]
     [else
      (define projected-shape
        (vector-append (make-vector (max (- out-rank cell-rank) 0) 1)
-                      (vector-take-right cell-shape (min cell-rank out-rank))))
-     (build-array shape
+                      (vector-take-right in-shape (min cell-rank out-rank))))
+     (build-array cell-shape
                   (let ([c (->array c)])
                     (λ (js)
                       (if (for/and ([j (in-vector js)]

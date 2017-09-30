@@ -6,9 +6,9 @@
  normalize-value
  ->array
  sequence->array
- value-rank
- value-shape
- value-tally
+ rank
+ shape
+ tally
  item-ref
  item-shape
  in-items)
@@ -57,26 +57,26 @@
    (vector (sequence-length s))
    (λ (js) (sequence-ref s (unsafe-vector-ref js 0)))))
 
-(define (value-rank v)
+(define (rank v)
   (cond
     [(array? v) (array-dims v)]
     [(and (sequence? v) (not (number? v))) 1]
     [else 0]))
 
-(define (value-shape v)
+(define (shape v)
   (cond
     [(array? v) (array-shape v)]
     [(and (sequence? v) (not (number? v))) (vector (sequence-length v))]
     [else #[]]))
 
-(define (value-tally v)
+(define (tally v)
   (cond
     [(array? v) (let ([s (array-shape v)]) (if (zero? (vector-length s)) 1 (vector-ref s 0)))]
     [(and (sequence? v) (not (number? v))) (sequence-length v)]
     [else 1]))
 
 (define (item-ref v pos)
-  (define len (value-tally v))
+  (define len (tally v))
   (define (do-ref ref)
     (unless (<= (- len) pos (sub1 len))
       (raise-range-error 'item-ref "value" "" pos v (- len) (sub1 len)))
@@ -89,7 +89,7 @@
     [else (do-ref (λ (pos) v))]))
 
 (define (item-shape v)
-  (define v-shape (value-shape v))
+  (define v-shape (shape v))
   (if (zero? (vector-length v-shape))
       #[]
       (vector-drop v-shape 1)))

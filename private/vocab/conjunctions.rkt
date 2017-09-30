@@ -44,7 +44,7 @@
          (values n (list->string (list n)))]
         [(and (eqv? 1 (array-dims n)) (array-andmap char? n))
          (values n (list->string (array->list n)))]
-        [(and (eqv? 1 (value-rank n)) (array-andmap box? n))
+        [(and (eqv? 1 (rank n)) (array-andmap box? n))
          (define lines
            (map (λ (e)
                   (define str (unbox e))
@@ -53,7 +53,7 @@
                   (list->string (array->list str)))
                 (array->list n)))
          (values n (string-join lines "\n"))]
-        [(and (eqv? 2 (value-rank n)) (array-andmap char? n))
+        [(and (eqv? 2 (rank n)) (array-andmap char? n))
          (values n (map list->string (array->list-array n)))]
         [else (error "invalid argument:" n)])))
   ; TODO: control statements
@@ -108,8 +108,8 @@
       [(eqv? +inf.0) #f]
       [(eqv? -inf.0) 0]
       [else (error "invalid rank:" v)]))
-  (unless (and (<= (value-rank n) 1)
-               (<= 1 (value-tally n) 3))
+  (unless (and (<= (rank n) 1)
+               (<= 1 (tally n) 3))
     (error "invalid rank specifier:" n))
   (define rank
     (match (map ->rank (sequence->list (in-items n)))

@@ -17,7 +17,7 @@
 @section{Ranked Values}
 
 @defproc[(atom? [v any/c]) boolean?]{
-  Equivalent to @racket[(zero? (value-rank v))].
+  Equivalent to @racket[(zero? (rank v))].
 }
 
 @defproc[(normalized-value? [v any/c]) boolean?]{
@@ -52,36 +52,36 @@
   Returns a one-dimensional array containing the elements of @racket[s].
 }
 
-@defproc[(value-rank [v any/c]) exact-nonnegative-integer?]{
+@defproc[(rank [v any/c]) exact-nonnegative-integer?]{
   Returns the rank of @racket[v].
 
   @examples[#:eval rank-eval
-            (value-rank 3)
-            (value-rank '(3))
-            (value-rank (index-array #[2 3 4]))
-            (value-rank (vector))]
+            (rank 3)
+            (rank '(3))
+            (rank (index-array #[2 3 4]))
+            (rank (vector))]
 }
 
-@defproc[(value-shape [v any/c]) (vectorof exact-nonnegative-integer?)]{
+@defproc[(shape [v any/c]) (vectorof exact-nonnegative-integer?)]{
   Returns the shape of @racket[v].
 
   Examples:
   @examples[#:eval rank-eval
-            (value-shape 3)
-            (value-shape '(3))
-            (value-shape (index-array #[2 3 4]))
-            (value-shape (vector))]
+            (shape 3)
+            (shape '(3))
+            (shape (index-array #[2 3 4]))
+            (shape (vector))]
 }
 
-@defproc[(value-tally [v any/c]) exact-nonnegative-integer?]{
+@defproc[(tally [v any/c]) exact-nonnegative-integer?]{
   Returns the number of items in @racket[v].
 
   Examples:
   @examples[#:eval rank-eval
-            (value-tally 3)
-            (value-tally '(3))
-            (value-tally (index-array #[2 3 4]))
-            (value-tally (vector))]
+            (tally 3)
+            (tally '(3))
+            (tally (index-array #[2 3 4]))
+            (tally (vector))]
 }
 
 @defproc[(item-ref [v any/c] [pos exact-integer?]) any/c]{
@@ -92,7 +92,7 @@
 
 @defproc[(item-shape [v any/c]) (vectorof exact-nonnegative-integer?)]{
   Returns the shape of an item of @racket[v].
-  Equivalent to @racket[(if (atom? v) #[] (vector-drop (value-shape v) 1))].
+  Equivalent to @racket[(if (atom? v) #[] (vector-drop (shape v) 1))].
 }
 
 @defproc[(in-items [v any/c]) sequence?]{
