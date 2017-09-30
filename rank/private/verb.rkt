@@ -24,6 +24,7 @@
  procedure-rank/c
  rankable-procedure/c
  ranked-procedure?
+ current-fill
  lambda/rank
  case-lambda/rank
  define/rank
@@ -62,7 +63,7 @@
   #:property prop:procedure (struct-field-index invoke)
   #:property prop:rank (λ (p arity) ((ranked-procedure-wrapper-get-rank p) arity)))
 
-(define current-fill (make-parameter (void)))
+(define current-fill (make-parameter #f))
 
 (define (apply/rank #:fill [fill (current-fill)] proc . args)
   (define real-proc

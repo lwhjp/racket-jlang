@@ -32,8 +32,8 @@
   (case-lambda/rank
    [(y) (apply/rank
          (λ (k) (u (jv:take k y)))
-         (list (build-list (tally y) add1)))]
-   [([x 0] y) (define yt (tally y))
+         (list (build-list (item-count y) add1)))]
+   [([x 0] y) (define yt (item-count y))
               (apply/rank
                (λ (k) (u (jv:from (build-list (min (abs x) (- yt k)) (λ (i) (+ i k))) y)))
                (list (sequence->list (if (negative? x)

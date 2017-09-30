@@ -76,15 +76,15 @@
 
 @section{Items}
 
-@defproc[(tally [v any/c]) exact-nonnegative-integer?]{
+@defproc[(item-count [v any/c]) exact-nonnegative-integer?]{
   Returns the number of items in @racket[v].
 
   Examples:
   @examples[#:eval rank-eval
-            (tally 3)
-            (tally '(3))
-            (tally (index-array #[2 3 4]))
-            (tally (vector))]
+            (item-count 3)
+            (item-count '(3))
+            (item-count (index-array #[2 3 4]))
+            (item-count (vector))]
 }
 
 @defproc[(item-ref [v any/c] [pos exact-integer?]) any/c]{
@@ -96,6 +96,44 @@
 @defproc[(item-shape [v any/c]) (vectorof exact-nonnegative-integer?)]{
   Returns the shape of an item of @racket[v].
   Equivalent to @racket[(if (atom? v) #[] (vector-drop (shape v) 1))].
+}
+
+@defproc[(head-item [v any/c]) any/c]{
+  Returns the first item of @racket[v].
+  Equivalent to @racket[(item-ref (take-items v 1) 0)].
+}
+
+@defproc[(last-item [v any/c]) any/c]{
+  Returns the last item of @racket[v].
+  Equivalent to @racket[(item-ref (take-items v -1) 0)].
+}
+
+@defproc[(take-items [v any/c] [pos exact-integer?]) any/c]{
+  Returns the first @racket[pos] items of @racket[v] if @racket[pos] is atomic
+  (counting from the end if @racket[pos] is negative). If @racket[pos] is a
+  vector, this process is applied recursively to the items returned according
+  to the succesive elements of @racket[pos].
+
+  If more items are requested than are contained in @racket[v], the extra items
+  will be filled with @racket[(current-fill)].
+}
+
+@defproc[(tail-items [v any/c]) any/c]{
+  Returns all the items of @racket[v] except the first.
+  Equivalent to @racket[(drop-items v 1)].
+}
+
+@defproc[(drop-items [v any/c] [pos exact-integer?]) any/c]{
+  Drops the first @racket[pos] items of @racket[v] if @racket[pos] is atomic
+  (counting from the end if @racket[pos] is negative). If @racket[pos] is a
+  vector, this process is applied recursively to the items returned according
+  to the succesive elements of @racket[pos].
+}
+
+@defproc[(reshape-items [v any/c] [new-shape exact-integer?]) any/c]{
+  Reshape the items of @racket[v]. The returned value will have the shape
+  @racket[(vector-append new-shape (item-shape v))], with the same items
+  as @racket[v], repeating or truncating if necessary.
 }
 
 @defproc[(in-items [v any/c]) sequence?]{
@@ -140,10 +178,15 @@ A ranked procedure implicitly iterates over its arguments according to its rank.
   Returns @racket[#t] if @racket[v] is a ranked procedure, @racket[#f] otherwise.
 }
 
+@defparam[current-fill fill any/c
+          #:value #f]{
+  A parameter that defines the value to be used for padding cells.
+}
+
 @defproc[(apply/rank [proc (or/c procedure? ranked-procedure?)]
                      [v any/c] ...
                      [lst list?]
-                     [#:fill fill any/c (void)])
+                     [#:fill fill any/c (current-fill)])
          normalized-value?]{
   Similar to the ordinary Racket @racket[apply], except that non-ranked procedures
   are assumed to have rank @racket[0] for each argument.

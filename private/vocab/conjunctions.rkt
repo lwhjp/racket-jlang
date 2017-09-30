@@ -109,7 +109,7 @@
       [(eqv? -inf.0) 0]
       [else (error "invalid rank:" v)]))
   (unless (and (<= (rank n) 1)
-               (<= 1 (tally n) 3))
+               (<= 1 (item-count n) 3))
     (error "invalid rank specifier:" n))
   (define rank
     (match (map ->rank (sequence->list (in-items n)))

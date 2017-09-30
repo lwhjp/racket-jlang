@@ -12,7 +12,6 @@
          (only-in racket/list make-list)
          racket/math
          racket/provide
-         racket/sequence
          racket/vector
          "../../customize.rkt"
          "../../rank.rkt"
@@ -172,28 +171,7 @@
 
 (define/rank (jv:shape [x 1] y)
   ; TODO: fit
-  (define x-vec (array->vector (->array x)))
-  (cond
-    [(zero? (vector-length x-vec)) (if (atom? y) y (array-axis-ref (->array y) 0 0))]
-    [(atom? y) (make-array x-vec y)]
-    [else
-     (define x-len (vector-length x-vec))
-     (define y-arr (->array y))
-     (define y-shape (array-shape y))
-     (define item-count (vector-ref y-shape 0))
-     (define item-shape (vector-drop y-shape 1))
-     (array-transform
-      y-arr
-      (vector-append x-vec item-shape)
-      (λ (js)
-        (define item-idx
-          (for/fold ([i 0])
-                    ([j (in-vector js)]
-                     [d (in-vector x-vec)])
-            (+ (* i d) j)))
-        (define y-part (vector-drop js (sub1 x-len)))
-        (vector-set! y-part 0 (remainder item-idx item-count))
-        y-part))]))
+  (reshape-items y x))
 
 ; Sparse: not implemented
 
@@ -281,11 +259,11 @@
 ; words
 ; sequential machine
 
-(define/rank (jv:tally y) (tally y))
+(define/rank (jv:tally y) (item-count y))
 
 (define/rank (jv:copy [x 1] y)
   (cond
-    [(eqv? (tally x) (tally y))
+    [(eqv? (item-count x) (item-count y))
      (define y-arr
        (if (array? y) y (array #[y])))
      (define indexes
@@ -344,58 +322,21 @@
   ; TODO: non-integer x
   (item-ref y x))
 
-(define/rank (jv:head y) (jv:from 0 (jv:take 1 y)))
+(define/rank (jv:head y) (head-item y))
 
 (define/rank (jv:take [x 1] y)
   ; TODO: fit
-  (define x-vec (array->vector (->array x)))
-  (define y-arr
-    (if (array? y)
-        y
-        (jv:shape (make-vector (vector-length x-vec) 1) y)))
-  (define y-shape (array-shape y-arr))
-  (unless (<= (vector-length x-vec) (vector-length y-shape))
-    (error 'take "index error: ~a" x))
-  ;; Can't use array-slice-ref due to overtaking
-  (define out-shape
-    (for/vector ([k (in-sequences (in-vector x-vec) (in-cycle '(+inf.0)))]
-                 [d (in-vector y-shape)])
-      (if (infinite? k) d (abs k))))
-  (define index-offsets
-    (for/vector ([k (in-sequences (in-vector x-vec) (in-cycle '(+inf.0)))]
-                 [d (in-vector y-shape)])
-      (if (negative? k) (+ k d) 0)))
-  (define fill (or (guess-fill y) 0)) ; TODO: types
-  (build-array
-   out-shape
-   (λ (js)
-     (define offset-js (vector-map + js index-offsets))
-     (if (for/and ([j (in-vector offset-js)]
-                   [d (in-vector y-shape)])
-           (<= 0 j (sub1 d)))
-         (array-ref y-arr offset-js)
-         fill))))
+  (parameterize ([current-fill (or (guess-fill y) 0)]) ; TODO: types
+    (take-items y x)))
 
-(define/rank (jv:tail y) (jv:from 0 (jv:take -1 y)))
+(define/rank (jv:tail y) (last-item y))
 
 ;map
 ;fetch
 
-(define/rank (jv:behead y) (jv:drop 1 y))
+(define/rank (jv:behead y) (tail-items y))
 
-(define/rank (jv:drop [x 1] y)
-  (define x-vec (array->vector (->array x)))
-  (define y-arr (if (atom? y) (array #[y]) y))
-  (define y-shape (array-shape y-arr))
-  (unless (<= (vector-length x-vec) (vector-length y-shape))
-    (error 'drop "index error: ~a" x))
-  (array-slice-ref
-   y-arr
-   (for/list ([k (in-sequences (in-vector x-vec) (in-cycle '(0)))]
-              [d (in-vector y-shape)])
-     (if (negative? k)
-         (:: (max (+ d k) 0))
-         (:: (min d k) d)))))
+(define/rank (jv:drop [x 1] y) (drop-items y x))
 
 (define/rank (jv:curtail y) (jv:drop -1 y))
 
@@ -423,7 +364,7 @@
 (define/rank (jv:index-of x y)
   ; TODO: fit
   (define rix (max 0 (sub1 (rank x))))
-  (define tx (tally x))
+  (define tx (item-count x))
   ; FIXME: this is a little clumsy...
   ((make-ranked-procedure
     (λ (c)
