@@ -3,6 +3,8 @@
 @(require scribble/example
           (for-label math/array
                      racket/base
+                     racket/contract/base
+                     racket/math
                      racket/vector
                      j/rank))
 
@@ -74,6 +76,11 @@
             (shape (vector))]
 }
 
+@defproc[(ranked-value [atom/c flat-contract?]) flat-contract?]{
+  Returns a contract that requires the input to be a value with
+  atoms matching @racket[atom/c].
+}
+
 @section{Items}
 
 @defproc[(item-count [v any/c]) exact-nonnegative-integer?]{
@@ -87,7 +94,7 @@
             (item-count (vector))]
 }
 
-@defproc[(item-ref [v any/c] [pos exact-integer?]) any/c]{
+@defproc[(item-ref [v any/c] [pos (ranked-value exact-integer?)]) any/c]{
   Returns the item of @racket[v] at position @racket[pos], where the first
   item is position @racket[0], and negative positions count backwards from
   the end.
@@ -108,7 +115,7 @@
   Equivalent to @racket[(item-ref (take-items v -1) 0)].
 }
 
-@defproc[(take-items [v any/c] [pos exact-integer?]) any/c]{
+@defproc[(take-items [v any/c] [pos (ranked-value (or/c exact-integer? infinite?))]) any/c]{
   Returns the first @racket[pos] items of @racket[v] if @racket[pos] is atomic
   (counting from the end if @racket[pos] is negative). If @racket[pos] is a
   vector, this process is applied recursively to the items returned according
@@ -123,14 +130,14 @@
   Equivalent to @racket[(drop-items v 1)].
 }
 
-@defproc[(drop-items [v any/c] [pos exact-integer?]) any/c]{
+@defproc[(drop-items [v any/c] [pos (ranked-value (or/c exact-integer? infinite?))]) any/c]{
   Drops the first @racket[pos] items of @racket[v] if @racket[pos] is atomic
   (counting from the end if @racket[pos] is negative). If @racket[pos] is a
   vector, this process is applied recursively to the items returned according
   to the succesive elements of @racket[pos].
 }
 
-@defproc[(reshape-items [v any/c] [new-shape exact-integer?]) any/c]{
+@defproc[(reshape-items [v any/c] [new-shape (ranked-value exact-nonnegative-integer?)]) any/c]{
   Reshape the items of @racket[v]. The returned value will have the shape
   @racket[(vector-append new-shape (item-shape v))], with the same items
   as @racket[v], repeating or truncating if necessary.

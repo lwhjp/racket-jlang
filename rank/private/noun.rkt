@@ -7,9 +7,11 @@
  ->array
  sequence->array
  rank
- shape)
+ shape
+ ranked-value)
 
 (require math/array
+         racket/contract/base
          racket/sequence
          racket/unsafe/ops)
 
@@ -63,3 +65,9 @@
     [(array? v) (array-shape v)]
     [(and (sequence? v) (not (number? v))) (vector (sequence-length v))]
     [else #[]]))
+
+(define (ranked-value atom/c)
+  (flat-named-contract
+   `(ranked-value ,(contract-name atom/c))
+   (λ (v)
+     (array-andmap atom/c (->array v)))))

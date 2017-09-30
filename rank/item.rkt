@@ -1,6 +1,19 @@
 #lang racket/base
 
-(provide (all-defined-out))
+(require racket/contract/base)
+
+(provide
+ item-count
+ item-shape
+ head-item
+ last-item
+ tail-items
+ in-items
+ (contract-out
+  [item-ref (-> any/c (ranked-value exact-integer?) any/c)]
+  [take-items (-> any/c (ranked-value (or/c exact-integer? infinite?)) any/c)]
+  [drop-items (-> any/c (ranked-value (or/c exact-integer? infinite?)) any/c)]
+  [reshape-items (-> any/c (ranked-value exact-nonnegative-integer?) any/c)]))
 
 (require math/array
          racket/math
