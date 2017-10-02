@@ -67,7 +67,21 @@
   [(*zero? t) (lambda/atomic (x y) (->jbool (< x y)))]
   [(*positive? t) (lambda/atomic (x y) (->jbool (and (< x y) (not (=/t t x y)))))])
 
-;floor
+(define/rank (jv:floor [z 0])
+  ; TODO: tolerance
+  (cond
+    [(real? z) (floor z)]
+    [else
+     (define r (real-part z))
+     (define i (imag-part z))
+     (define rip (floor r))
+     (define iip (floor i))
+     (define x (- r rip))
+     (define y (- i iip))
+     (cond
+       [(> 1 (+ x y)) (make-rectangular rip iip)]
+       [(>= x y) (make-rectangular (add1 rip) iip)]
+       [else (make-rectangular rip (add1 iip))])]))
 
 (define-customizable/cond (jv:lesser-of t)
   current-default-tolerance
@@ -88,7 +102,11 @@
   [(*zero? t) (lambda/atomic (x y) (->jbool (> x y)))]
   [(*positive? t) (lambda/atomic (x y) (->jbool (and (> x y) (not (=/t t x y)))))])
 
-; ceiling
+(define/rank (jv:ceiling [z 0])
+  ; TODO: tolerance
+  (cond
+    [(real? z) (ceiling z)]
+    [else (- (jv:floor (- z)))]))
 
 (define-customizable/cond (jv:larger-of t)
   current-default-tolerance
@@ -117,7 +135,10 @@
 
 (define/atomic jv:not-or (λ (x y) (= 0 x y)))
 
-; signum (complex)
+(define/rank (jv:signum [y 0])
+  (cond
+    [(real? y) (sgn y)]
+    [else (/ y (magnitude y))]))
 
 (define-dyad-alias jv:times *)
 
@@ -188,7 +209,11 @@
 
 (define-monad-alias jv:magnitude magnitude)
 
-; residue (non-integer)
+(define/rank (jv:residue [x 0] [y 0])
+  ; TODO: tolerance
+  (cond
+    [(zero? x) y]
+    [(- y (* x (jv:floor (/ y x))))]))
 
 (define/rank (jv:reverse y) ; TODO: fit (right-shift)
   (if (zero? (rank y))
@@ -301,8 +326,32 @@
              [y (in-array y-arr)])
     (+ (* a x) y)))
 
-;antibase two
-;antibase
+(define/rank (jv:antibase-two y)
+  (define y-arr (->array y))
+  (define len
+    (array-all-max (array-map integer-length y-arr)))
+  (define x-arg (make-list (max len 1) 2))
+  (define bits
+    (array-map (λ (n) (jv:antibase x-arg n)) y-arr))
+  (build-array
+   (vector-append (array-shape y-arr) (vector (max len 1)))
+   (λ (js)
+     (array-ref (array-ref bits (vector-drop-right js 1))
+                (vector-take-right js 1)))))
+
+(define/rank (jv:antibase [x 1] [y 0])
+  (list->array
+   (reverse
+    (let loop ([rs (if (array? x) (reverse (array->list x)) (list x))]
+               [n y])
+      (cond
+        [(null? rs) '()]
+        [else
+         (define r (car rs))
+         (define-values (a d) (quotient/remainder n r))
+         (cons d (loop (cdr rs) a))])))))
+
+
 ;factorial
 ;out-of
 ;grade-up
